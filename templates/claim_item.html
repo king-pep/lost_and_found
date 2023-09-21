@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card border-primary mb-3">
+                <div class="card-header bg-primary text-white">
+                    <h4>Submit Your Claim</h4>
+                </div>
+
+                <div class="card-body">
+                    <div class="loader-container" style="display: none; position: relative;">
+                        <div id="loader"
+                             style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                            <img src="{{ url_for('static', filename='ZKZg.gif') }}" alt="Loading..."
+                                 style="width: 50px; height: 50px;">
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="progress" style="margin-bottom: 15px;">
+                        <div class="progress-bar" role="progressbar" id="uploadProgressBar"
+                             aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                    {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible">
+                        <button type="button" class="close" data-dismiss="alert">&times;</button>
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                    {% endwith %}
+
+                    <form method="post" enctype="multipart/form-data" id="claimForm" style="position: relative;">
+                        <div class="form-group">
+                            <label for="submitted_proof_file" class="font-weight-bold">Submit Proof of
+                                Ownership:</label>
+                            <div class="custom-file">
+                                <input type="file" class="custom-file-input" id="submitted_proof_file"
+                                       name="submitted_proof_file" required onchange="updateLabel()">
+                                <label class="custom-file-label" for="submitted_proof_file" id="file-label">Choose
+                                    file</label>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-lg btn-block">Submit Claim</button>
+                    </form>
+
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="successModalLabel">Success</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    Your claim has been successfully submitted.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="location.href='{{ url_for('dashboard') }}'">
+                        Go to Dashboard
+                    </button>
+                    <button type="button" class="btn btn-secondary"
+                            onclick="location.href='{{ url_for('landing_page') }}'">Home Page
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add or update this script at the bottom of your HTML file -->
+    <script>
+        function updateLabel() {
+            var fileName = document.getElementById('submitted_proof_file').files[0].name;
+            document.getElementById('file-label').textContent = fileName;
+        }
+
+        // Handle form submission
+        $('form').on('submit', function (e) {
+            e.preventDefault();
+            $(".loader-container").show();
+            // Disable the submit button
+            $("button[type='submit']").prop("disabled", true);
+
+            var formData = new FormData(this);
+            $.ajax({
+                type: 'POST',
+                url: '{{ url_for("claim_item", item_id=item_id) }}',
+                data: formData,
+                contentType: false,
+                processData: false,
+                xhr: function () {
+                    var xhr = new window.XMLHttpRequest();
+                    xhr.upload.addEventListener("progress", function (evt) {
+                        if (evt.lengthComputable) {
+                            var percentComplete = evt.loaded / evt.total;
+                            percentComplete = parseInt(percentComplete * 100);
+                            $('#uploadProgressBar').css('width', percentComplete + '%').attr('aria-valuenow', percentComplete);
+                            if (percentComplete === 100) {
+                                $('#uploadProgressBar').addClass('bg-success');
+                            }
+                        }
+                    }, false);
+                    return xhr;
+                },
+                success: function (response) {
+                    // Enable the submit button
+                    $(".loader-container").hide();
+                    $("button[type='submit']").prop("disabled", false);
+
+                    if (response.status === 'success') {
+                        $('#successModal').modal('show');
+                    } else {
+                        alert('An error occurred. Please try again.');
+                    }
+                },
+                error: function () {
+                    // Enable the submit button in case of an error
+                    $("button[type='submit']").prop("disabled", false);
+                    alert('An error occurred. Please try again.');
+                }
+            });
+        });
+
+
+    </script>
+</div>
+{% endblock %}

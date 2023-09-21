@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Manage Users</h2>
+
+    <!-- Search and Filter -->
+    <div class="mb-4">
+        <input type="text" class="form-control" placeholder="Search Users" id="userSearch">
+        <!-- You can add more filters as needed -->
+    </div>
+
+    <form method="post">
+        <table class="table table-bordered table-hover">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Username</th>
+                <th>Actions</th>
+                <th>Select</th>  <!-- For bulk actions -->
+            </tr>
+            </thead>
+            <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.id }}</td>
+                <td>{{ user.first_name }} {{ user.last_name }}</td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.username }}</td>
+                <td>
+                    <input type="hidden" name="user_id" value="{{ user.id }}">
+                    {% if user.is_active %}
+                    <button type="submit" name="action" value="deactivate" class="btn btn-primary" data-bs-toggle="tooltip" title="Deactivate User">Deactivate</button>
+                    {% else %}
+                    <button type="submit" name="action" value="activate" class="btn btn-primary" data-bs-toggle="tooltip" title="Activate User">Activate</button>
+                    {% endif %}
+                    {% if not user.is_admin %}
+                    <button type="submit" name="action" value="make_admin" class="btn btn-primary" data-bs-toggle="tooltip" title="Make Admin">Make Admin</button>
+                    {% else %}
+                    <button type="submit" name="action" value="remove_admin" class="btn btn-primary" data-bs-toggle="tooltip" title="Remove Admin">Remove Admin</button>
+                    {% endif %}
+                </td>
+                <td><input type="checkbox" name="selected_users" value="{{ user.id }}"></td>  <!-- For bulk actions -->
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Bulk Action Buttons -->
+        <button type="submit" name="bulk_action" value="activate_selected" class="btn btn-primary" data-bs-toggle="tooltip" title="Activate Selected Users">Activate Selected</button>
+        <button type="submit" name="bulk_action" value="deactivate_selected" class="btn btn-primary" data-bs-toggle="tooltip" title="Deactivate Selected Users">Deactivate Selected</button>
+    </form>
+</div>  <!-- End of container -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}

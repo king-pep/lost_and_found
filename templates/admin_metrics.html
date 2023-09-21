@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Admin Metrics</h2>
+
+    <!-- Navigation Links for Admin Functions -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+        <div class="container-fluid">
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('manage_users') }}">Manage Users</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('manage_items') }}">Manage Reported
+                        Items</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="{{ url_for('admin_metrics') }}">View System
+                        Metrics</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('logs_and_audits') }}">Logs and Audits</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('notifications') }}">Notifications</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="row">
+        <!-- User Metrics -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">User Metrics</div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">Total Users: {{ total_users }}</li>
+                    <li class="list-group-item">Users Registered in Last 7 days: {{ recent_users }}</li>
+                    <li class="list-group-item">Logins in Last 24 hours: {{ recent_logins }}</li>
+                    <li class="list-group-item">Active Users in Last 7 days: {{ active_users }}</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Item Metrics -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">Item Metrics</div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">Total Reported Items: {{ total_items }}</li>
+                    <li class="list-group-item">Items Reported in Last 7 days: {{ recent_items }}</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <!-- Items by Category -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">Items by Category</div>
+                <ul class="list-group list-group-flush">
+                    {% for category, count in items_by_category %}
+                    <li class="list-group-item">{{ category }}: {{ count }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <!-- User Growth Chart -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">User Growth</div>
+                <div class="card-body">
+                    <canvas id="userGrowthChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications Section -->
+    <div class="card mb-4">
+        <div class="card-header">System Notifications</div>
+        <ul class="list-group list-group-flush">
+            {% for notification in system_notifications %}
+                <li class="list-group-item">{{ notification.message }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- Audit Logs Section -->
+    <div class="card mb-4">
+        <div class="card-header">Audit Logs</div>
+        <ul class="list-group list-group-flush">
+            {% for log in audit_logs %}
+                <li class="list-group-item">{{ log.message }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>  <!-- End of container -->
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}

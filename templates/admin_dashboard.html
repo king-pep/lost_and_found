@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Admin Dashboard</h2>
+
+    <!-- Navigation Links for Admin Functions -->
+    <div class="mb-4">
+        <nav class="nav nav-pills">
+            <a class="nav-link active" href="{{ url_for('manage_users') }}">Manage Users</a>
+            <a class="nav-link" href="{{ url_for('manage_items') }}">Manage Reported Items</a>
+            <a class="nav-link" href="{{ url_for('claims_awaiting_verification') }}">Verify Claims</a>
+            <a class="nav-link" href="{{ url_for('statistics') }}">View System Statistics</a>
+            <a class="nav-link" href="{{ url_for('admin_metrics') }}">View Admin Metrics</a>
+        </nav>
+    </div>
+
+    <!-- Claims Verification Section -->
+    <div class="card mb-4">
+        <div class="card-header">Claims Awaiting Verification</div>
+        <table class="table">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Item ID</th>
+                <th>User ID</th>
+                <th>Claim Status</th>
+                <th>Submitted Proof</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for claim in claims %}
+            <tr>
+                <td>{{ claim.id }}</td>
+                <td>{{ claim.item_id }}</td>
+                <td>{{ claim.user_id }}</td>
+                <td>{{ claim.claim_status }}</td>
+                <td>{{ claim.submitted_proof }}</td>
+                <td>
+                    {% if claim.submitted_proof %}
+                    <a href="{{ url_for('uploads', filename=claim.submitted_proof) }}" target="_blank"
+                       class="btn btn-info">View Proof</a>
+                    {% endif %}
+                    <form method="post" action="{{ url_for('verify_claim', claim_id=claim.id) }}">
+                        <button type="submit" class="btn btn-success">Verify</button>
+                    </form>
+                    <form method="post" action="{{ url_for('reject_claim', claim_id=claim.id) }}">
+                        <button type="submit" class="btn btn-danger">Reject</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+
+    <!-- Recent Users Section -->
+    <div class="card mb-4">
+        <div class="card-header">Recent Users</div>
+        <ul class="list-group list-group-flush">
+            {% for user in users %}
+            <li class="list-group-item">{{ user.username }} - {{ user.email }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- Recent Reported Items Section -->
+    <div class="card">
+        <div class="card-header">Recent Reported Items</div>
+        <ul class="list-group list-group-flush">
+            {% for item in items %}
+            <li class="list-group-item">{{ item.description }} - Reported by {{ item.user.username }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>  <!-- End of container -->
+{% endblock %}

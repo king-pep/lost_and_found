@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Potential Matches</h2>
+    <hr>
+    {% if items %}
+    <ul class="list-group">
+        {% for item in items %}
+        <li class="list-group-item">
+            <h4>{{ item.description }}</h4>
+            <p><strong>Category:</strong> {{ item.category }}</p>
+            <p><strong>Location:</strong> {{ item.location }}</p>
+            <p><strong>Time:</strong> {{ item.time.strftime('%Y-%m-%d %H:%M') }}</p>
+            {% if item.image_file %}
+            <img src="{{ url_for('static', filename='images/' + item.image_file) }}" alt="Item Image" width="100">
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>No potential matches found.</p>
+    {% endif %}
+</div>
+{% endblock %}

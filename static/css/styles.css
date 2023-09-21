@@ -1,0 +1,114 @@
+.carousel-control-prev-icon,
+.carousel-control-next-icon {
+    background-color: rgba(0, 0, 0, 0.5); /* semi-transparent black */
+}
+
+.carousel-control-prev:hover,
+.carousel-control-next:hover {
+    opacity: 0.8; /* make it slightly transparent on hover for better UX */
+}
+.card:hover {
+    transform: scale(1.05);
+    transition: transform 0.3s ease-in-out;
+    box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
+}
+.chat-card {
+    border-radius: 10px;
+}
+
+.chat-header, .chat-footer {
+    background-color: #f5f5f5;
+}
+
+.chat-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.chat-body {
+    height: 500px;
+    overflow-y: scroll;
+}
+
+.chat-message {
+    display: flex;
+    align-items: flex-end;
+    margin-bottom: 10px;
+}
+
+.chat-initials {
+    width: 30px;
+    height: 30px;
+    background-color: #ddd;
+    color: #666;
+    font-size: 16px;
+    line-height: 30px;
+    text-align: center;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.chat-bubble {
+    max-width: 60%;
+    padding: 10px 20px;
+    border-radius: 20px;
+}
+
+.chat-bubble.sender {
+    background-color: #007bff;
+    color: white;
+}
+
+.chat-bubble.receiver {
+    background-color: #f1f1f1;
+    color: black;
+}
+
+.chat-time {
+    font-size: 12px;
+    opacity: 0.7;
+    margin-top: 5px;
+    display: block;
+}
+
+.message-status {
+    font-size: 12px;
+    margin-left: 10px;
+}
+
+.btn-send {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px;
+}
+.message-wrapper {
+    display: flex;
+    margin-bottom: 15px;
+}
+
+.message-wrapper.outgoing {
+    justify-content: flex-end;
+}
+
+.message-wrapper.incoming {
+    justify-content: flex-start;
+}
+
+.message {
+    border-radius: 10px;
+    padding: 10px;
+    display: inline-block;
+}
+
+.message-wrapper.outgoing .message {
+    background-color: #007bff;
+    color: white;
+}
+
+.message-wrapper.incoming .message {
+    background-color: #f1f1f1;
+    color: black;
+}

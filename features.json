@@ -1,0 +1,77 @@
+[
+    {
+        "title": "Instant Notifications",
+        "description": "Receive real-time alerts when a matching item is reported.",
+        "icon": "bell"
+    },
+    {
+        "title": "Secure Messaging",
+        "description": "Chat with finders without revealing your personal contact details.",
+        "icon": "envelope"
+    },
+    {
+        "title": "User Verification",
+        "description": "Ensuring the legitimacy of users through a robust verification process.",
+        "icon": "user-check"
+    },
+    {
+        "title": "Mobile Friendly",
+        "description": "Access the portal seamlessly on any device.",
+        "icon": "mobile"
+    },
+    {
+        "title": "Privacy First",
+        "description": "Your personal information is kept confidential and secure.",
+        "icon": "shield-alt"
+    },
+    {
+        "title": "Advanced Search",
+        "description": "Use filters and keywords to narrow down lost or found items.",
+        "icon": "search"
+    },
+    {
+        "title": "Image Recognition",
+        "description": "Upload images to find matching items using AI-driven recognition.",
+        "icon": "image"
+    },
+    {
+        "title": "User Dashboard",
+        "description": "Manage your reports and matches in one convenient place.",
+        "icon": "tachometer-alt"
+    },
+    {
+        "title": "Geo-tagging",
+        "description": "Mark the exact location of the lost or found item on a map.",
+        "icon": "map-marker-alt"
+    },
+    {
+        "title": "Community Support",
+        "description": "Connect with a supportive community to help you retrieve lost items.",
+        "icon": "users"
+    },
+    {
+        "title": "Quick Reporting",
+        "description": "Easily report lost or found items in just a few clicks.",
+        "icon": "clipboard"
+    },
+    {
+        "title": "Localized Matches",
+        "description": "Get match suggestions based on your locality or region.",
+        "icon": "compass"
+    },
+    {
+        "title": "Multi-language Support",
+        "description": "Use the platform in your preferred language.",
+        "icon": "language"
+    },
+    {
+        "title": "24/7 Customer Support",
+        "description": "Get assistance whenever you need it.",
+        "icon": "headset"
+    },
+    {
+        "title": "Data Analytics",
+        "description": "Get insights on reported items, matches, and more.",
+        "icon": "chart-bar"
+    }
+]

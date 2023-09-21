@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h4>Email Verification Failed</h4>
+            </div>
+            <div class="card-body">
+                <p>The confirmation link is invalid or has expired.</p>
+                <a href="{{ url_for('register') }}" class="btn btn-danger">Register Again</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

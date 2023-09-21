@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header text-center">
+            Chat with {{ other_user.username }}
+        </div>
+        <div class="card-body" id="messageArea">
+            {% for message in messages %}
+            <div class="message-wrapper {% if message.sender_id == current_user.id %}outgoing{% else %}incoming{% endif %}">
+                <div class="message">
+                    {{ message.content }}
+                </div>
+            </div>
+            {% endfor %}
+            <div id="newMessages"></div>
+        </div>
+        <div class="card-footer">
+            <div class="input-group">
+                <input type="text" class="form-control" id="messageInput" placeholder="Type a message..."
+                       name="message_content">
+                <div class="input-group-append">
+                    <button type="button" onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+<script type="text/javascript">
+    var socket = io.connect('http://' + document.domain + ':' + location.port);
+
+    function forceReflow(element) {
+        void element.offsetHeight;
+    }
+
+    socket.on('receive_message', function (data) {
+        var messageDiv = document.createElement("div");
+
+        // Check the sender ID and apply classes conditionally
+        if (data.sender_id === "{{ current_user.id }}") {
+            messageDiv.className = "mb-3 text-right";
+        } else {
+            messageDiv.className = "mb-3 text-left";
+        }
+
+        var messageSpan = document.createElement("span");
+
+        if (data.sender_id === "{{ current_user.id }}") {
+            messageSpan.className = "p-3 bg-primary text-white";
+        } else {
+            messageSpan.className = "p-3 bg-light";
+        }
+
+        messageSpan.style.borderRadius = "25px";
+        messageSpan.innerText = data.message_content;
+        messageDiv.appendChild(messageSpan);
+        document.getElementById("newMessages").appendChild(messageDiv);
+
+        // Force a reflow
+        forceReflow(messageDiv);
+    });
+
+    function sendMessage() {
+        var message_content = document.getElementById('messageInput').value;
+        var receiver_id = "{{ other_user.id }}";  // Assuming `other_user` is passed to the template
+
+        var data = {
+            message_content: message_content,
+            receiver_id: receiver_id,
+            sender_id: "{{ current_user.id }}"
+        };
+
+        socket.emit('send_message', data);
+
+        // Clear the input box
+        document.getElementById('messageInput').value = '';
+    }
+
+    // Event listener for the Enter key
+    document.getElementById('messageInput').addEventListener('keypress', function (event) {
+        if (event.keyCode === 13 || event.which === 13) {
+            event.preventDefault();  // Prevent the default action to stop the form from submitting
+            sendMessage();  // Send the message
+        }
+    });
+
+</script>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h4>Your Profile</h4>
+        </div>
+        <div class="card-body">
+            <h5>First Name: {{ current_user.first_name }}</h5>
+            <h5>Last Name: {{ current_user.last_name }}</h5>
+            <h5>Username: {{ current_user.username }}</h5>
+            <h5>Email: {{ current_user.email }}</h5>
+            <h5>Phone: {{ current_user.phone }}</h5>
+            <h5>Profile Visibility: {{ current_user.profile_visibility }}</h5>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Manage Reported Items</h2>
+
+    <!-- Search and Filter -->
+    <div class="mb-4">
+        <label for="itemSearch"></label><input type="text" class="form-control" placeholder="Search Items" id="itemSearch">
+        <!-- You can add more filters as needed -->
+    </div>
+
+    <form method="post">
+        <table class="table table-bordered table-hover">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Description</th>
+                <th>Category</th>
+                <th>Location</th>
+                <th>Actions</th>
+                <th>Select</th>  <!-- For bulk actions -->
+            </tr>
+            </thead>
+            <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item.id }}</td>
+                <td>{{ item.description }}</td>
+                <td>{{ item.category }}</td>
+                <td>{{ item.location }}</td>
+                <td>
+                    <input type="hidden" name="item_id" value="{{ item.id }}">
+                    {% if not item.is_verified %}
+                    <button type="submit" name="action" value="verify" class="btn btn-primary" data-bs-toggle="tooltip" title="Verify Item">Verify</button>
+                    {% endif %}
+                    <button type="submit" name="action" value="delete" class="btn btn-danger" data-bs-toggle="tooltip" title="Delete Item">Delete</button>
+                </td>
+                <td><label>
+                    <input type="checkbox" name="selected_items" value="{{ item.id }}">
+                </label></td>  <!-- For bulk actions -->
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Bulk Action Buttons -->
+        <button type="submit" name="bulk_action" value="verify_selected" class="btn btn-primary" data-bs-toggle="tooltip" title="Verify Selected Items">Verify Selected</button>
+        <button type="submit" name="bulk_action" value="delete_selected" class="btn btn-danger" data-bs-toggle="tooltip" title="Delete Selected Items">Delete Selected</button>
+    </form>
+</div>  <!-- End of container -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}

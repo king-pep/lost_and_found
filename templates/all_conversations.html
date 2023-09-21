@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">All Conversations</h2>
+    <ul class="list-group">
+        {% for user in involved_users %}
+        <li class="list-group-item">
+            <div class="row">
+                <div class="col-md-2">
+                    <!-- Avatar (if exists, otherwise display a placeholder) -->
+                    <img src="{{ url_for('static', filename='avatars/' + user.avatar) if user.avatar else url_for('static', filename='avatars/placeholder.png') }}"
+                         alt="{{ user.username }}" class="img-fluid rounded-circle" width="50">
+                </div>
+                <div class="col-md-8">
+                    <a href="{{ url_for('conversation', receiver_id=user.id) }}">
+                        {{ user.username }}
+                    </a>
+                    <!-- Last message (if exists) -->
+                    <p class="small text-muted">
+                        {{ user.last_message[:30] }}...
+                    </p>
+                </div>
+                <div class="col-md-2 text-right">
+                    <!-- Time of the last message -->
+                    <span class="small text-muted">
+                        {{ user.last_message_time.strftime('%Y-%m-%d %H:%M') if user.last_message_time }}
+                    </span>
+                    <!-- Unread message count -->
+                    {% if user.unread_count > 0 %}
+                    <span class="badge badge-primary">
+                        {{ user.unread_count }}
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+        </li>
+        {% else %}
+        <li class="list-group-item">
+            <div class="row">
+                <div class="col-md-12 text-center">
+                    <p>No conversations available.</p>
+                </div>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Item Details</h2>
+
+    <div class="card mb-4">
+        {% if item.image_file %}
+        <img src="{{ url_for('static', filename='images/' + item.image_file) }}" class="card-img-top"
+             alt="{{ item.description }}">
+        {% endif %}
+        <div class="card-body">
+            <h5 class="card-title">{{ item.description }}</h5>
+            <p class="card-text">
+                <strong>Category:</strong> {{ item.category }}<br>
+                <strong>Location:</strong> {{ item.location }}<br>
+                <strong>Date:</strong> {{ item.time.strftime('%Y-%m-%d %H:%M') }}<br>
+                <strong>Reporter:</strong> {{ item.reporter.username if item.reporter.profile_visibility == 'public'
+                else 'Private' }}
+            </p>
+            {% if item.reporter.profile_visibility == 'public' %}
+            <p>
+                <strong>Email:</strong> {{ item.reporter.email }}<br>
+                <strong>Phone:</strong> {{ item.reporter.phone }}
+            </p>
+            {% endif %}
+            <a href="{{ url_for('conversation', receiver_id=item.reporter.id) }}" class="btn btn-primary">Contact Reporter</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

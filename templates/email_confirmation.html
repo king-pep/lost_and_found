@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Email Confirmation</title>
+</head>
+<body>
+    <h1>Welcome to Our Service, {{ username }}!</h1>
+    <p>Thank you for signing up. We're excited to have you as a new user.</p>
+    <p>To complete your registration, please confirm your email address by clicking the link below:</p>
+    <a href="{{ confirm_url }}">Confirm my Email</a>
+    <p>This link will expire in 1 hour.</p>
+    <p>If you didn't sign up for this account, you can ignore this email.</p>
+    <p>Best regards,<br>The Support Team</p>
+</body>
+</html>
