@@ -71,7 +71,8 @@
         <div class="card-header">Recent Reported Items</div>
         <ul class="list-group list-group-flush">
             {% for item in items %}
-            <li class="list-group-item">{{ item.description }} - Reported by {{ item.user.username }}</li>
+            {% set user = User.query.get(item.user_id) %}
+            <li class="list-group-item">{{ item.description }} - Reported by {{ user.username }}</li>
             {% endfor %}
         </ul>
     </div>

@@ -17,6 +17,9 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from flask_migrate import Migrate
 from flask_wtf import form
 from datetime import timedelta
+
+from werkzeug.security import generate_password_hash
+
 from config import Config
 from forms import RegistrationForm, LoginForm, ItemForm, AdminRegistrationForm
 from models import User, db, Item, Message, Conversation, Claim, Notification  # Import db from models
@@ -24,6 +27,11 @@ import os
 from werkzeug.utils import secure_filename
 from collections import Counter
 import re
+
+# from keras.preprocessing import image as kimage
+# from keras.applications.vgg16 import VGG16, preprocess_input
+# import numpy as np
+# from sklearn.metrics.pairwise import cosine_similarity
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -45,6 +53,32 @@ metrics = PrometheusMetrics(app, path="/prom_metrics")
 s = URLSafeTimedSerializer(app.config["SECRET_KEY"])
 logging.basicConfig(level=logging.INFO)
 last_notified = {}
+# model = VGG16(weights='imagenet', include_top=False)
+# Define the templates
+# user_template = "INSERT INTO user (first_name, last_name, username, email, phone, password, is_admin, email_verified, profile_visibility, created_at) VALUES ('{first_name}', '{last_name}', '{username}', '{email}', '{phone}', '{hashed_password}', {is_admin}, {email_verified}, '{profile_visibility}', '{created_at}');"
+# item_template = "INSERT INTO item (description, category, location, user_id, type, created_at, time) VALUES ('{description}', '{category}', '{location}', {user_id}, '{type}', '{created_at}', '{time}');"
+#
+# # Generate the SQL
+# user_sql = []
+# item_sql = []
+#
+# for i in range(1, 11):
+#     password = f'password{i}'
+#     hashed_password = generate_password_hash(password)
+#     created_at = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+#
+#     user_sql.append(user_template.format(first_name=f'First{i}', last_name=f'Last{i}', username=f'user{i}',
+#                                          email=f'user{i}@example.com', phone=f'123456789{i}',
+#                                          hashed_password=hashed_password, is_admin='FALSE', email_verified='FALSE',
+#                                          profile_visibility='public', created_at=created_at))
+#
+#     item_sql.append(
+#         item_template.format(description=f'Item{i} Description', category=f'Category{i}', location=f'Location{i}',
+#                              user_id=i, type='lost', created_at=created_at, time=created_at))
+#
+# # Output the SQL
+# print("\n".join(user_sql))
+# print("\n".join(item_sql))
 
 # setup production metrics via Prometheus.
 metrics.info('app_info', 'Application info', version='1.0.3')
@@ -754,6 +788,55 @@ def reject_claim(claim_id):
     return redirect(url_for('admin_dashboard'))
 
 
+# def extract_features(img_path):
+#     img = kimage.load_img(img_path, target_size=(224, 224))
+#     img_array = kimage.img_to_array(img)
+#     img_array = np.expand_dims(img_array, axis=0)
+#     img_array = preprocess_input(img_array)
+#     features = model.predict(img_array)
+#     return features.flatten()
+#
+#
+# def find_matching_images(uploaded_img_path, features_db):
+#     uploaded_img_features = extract_features(uploaded_img_path)
+#     matching_images = []
+#     for img_name, features in features_db.items():
+#         similarity = cosine_similarity([uploaded_img_features], [features])
+#         if similarity[0][0] > 0.7:  # for example, if similarity is more than 70%
+#             matching_images.append(img_name)
+#     return matching_images
+
+#
+# @app.route('/image_recognition', methods=['GET', 'POST'])
+# def image_recognition():
+#     if request.method == 'POST':
+#         if 'image' not in request.files:
+#             flash('No image provided', 'error')
+#             return redirect(request.url)
+#
+#         image = request.files['image']
+#         if image.filename == '':
+#             flash('No selected image', 'error')
+#             return redirect(request.url)
+#
+#         if image and allowed_file(image.filename):
+#             filename = secure_filename(image.filename)
+#             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+#             image.save(filepath)
+#
+#             # Process the image and find matching items
+#             recognized_objects = process_image(filepath)
+#             matching_items = find_matching_items(recognized_objects)
+#
+#             return render_template('image_recognition_results.html', items=matching_items,
+#                                    recognized_objects=recognized_objects)
+#
+#         flash('Invalid file type', 'error')
+#         return redirect(request.url)
+#
+#     return render_template('image_recognition.html')
+
+
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -771,8 +854,8 @@ def admin_dashboard():
     claims = Claim.query.filter_by(claim_status='Pending').all()
     users = User.query.all()  # Retrieve all users
     items = Item.query.all()  # Retrieve all reported items
-    # Add more queries or computations as needed
-    return render_template('admin_dashboard.html', users=users, items=items)
+    # Pass the User model to the template
+    return render_template('admin_dashboard.html', users=users, items=items, User=User)
 
 
 @app.route('/admin/manage_users', methods=['GET', 'POST'])
