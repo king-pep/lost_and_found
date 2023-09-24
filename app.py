@@ -18,10 +18,13 @@ from flask_migrate import Migrate
 from flask_wtf import form
 from datetime import timedelta
 
+from sqlalchemy.exc import IntegrityError
+from termcolor import colored
 from werkzeug.security import generate_password_hash
-
+import logging
+from logging.handlers import RotatingFileHandler
 from config import Config
-from forms import RegistrationForm, LoginForm, ItemForm, AdminRegistrationForm
+from forms import RegistrationForm, LoginForm, ItemForm, AdminRegistrationForm, ResetPasswordForm
 from models import User, db, Item, Message, Conversation, Claim, Notification  # Import db from models
 import os
 from werkzeug.utils import secure_filename
@@ -32,7 +35,7 @@ import re
 # from keras.applications.vgg16 import VGG16, preprocess_input
 # import numpy as np
 # from sklearn.metrics.pairwise import cosine_similarity
-
+logs = []
 app = Flask(__name__)
 app.config.from_object(Config)
 app.config['MAIL_DEBUG'] = True
@@ -53,16 +56,18 @@ metrics = PrometheusMetrics(app, path="/prom_metrics")
 s = URLSafeTimedSerializer(app.config["SECRET_KEY"])
 logging.basicConfig(level=logging.INFO)
 last_notified = {}
+app.logger.info(colored('Your Application startup', 'green'))
+
 # model = VGG16(weights='imagenet', include_top=False)
 # Define the templates
 # user_template = "INSERT INTO user (first_name, last_name, username, email, phone, password, is_admin, email_verified, profile_visibility, created_at) VALUES ('{first_name}', '{last_name}', '{username}', '{email}', '{phone}', '{hashed_password}', {is_admin}, {email_verified}, '{profile_visibility}', '{created_at}');"
-# item_template = "INSERT INTO item (description, category, location, user_id, type, created_at, time) VALUES ('{description}', '{category}', '{location}', {user_id}, '{type}', '{created_at}', '{time}');"
+# item_template = "INSERT INTO item (name, description, category, location, user_id, type, created_at, time) VALUES ('{name}', '{description}', '{category}', '{location}', {user_id}, '{type}', '{created_at}', '{time}');"
 #
 # # Generate the SQL
 # user_sql = []
 # item_sql = []
-#
-# for i in range(1, 11):
+# `
+# for i in range(1, 51):
 #     password = f'password{i}'
 #     hashed_password = generate_password_hash(password)
 #     created_at = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
@@ -73,7 +78,8 @@ last_notified = {}
 #                                          profile_visibility='public', created_at=created_at))
 #
 #     item_sql.append(
-#         item_template.format(description=f'Item{i} Description', category=f'Category{i}', location=f'Location{i}',
+#         item_template.format(name=f'Item{i}', description=f'Item{i} Description', category=f'Category{i}',
+#                              location=f'Location{i}',
 #                              user_id=i, type='lost', created_at=created_at, time=created_at))
 #
 # # Output the SQL
@@ -104,6 +110,51 @@ metrics.info('requests_latency', 'Request latency in seconds',
 # setup the endpoint for the health check
 metrics.info('health', 'Health status of the service')
 
+if not app.debug:
+    if not os.path.exists('logs'):
+        os.mkdir('logs')
+    file_handler = RotatingFileHandler('logs/system.log', maxBytes=10240, backupCount=3)
+    file_handler.setFormatter(logging.Formatter(
+        '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
+    file_handler.setLevel(logging.INFO)
+    app.logger.addHandler(file_handler)
+
+    app.logger.setLevel(logging.INFO)
+    app.logger.info('Your Application startup')
+
+if not app.debug:
+    if not os.path.exists('logs'):
+        os.mkdir('logs')
+    file_handler = RotatingFileHandler('logs/system.log', maxBytes=10240, backupCount=3)
+    file_handler.setFormatter(logging.Formatter(
+        '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
+    file_handler.setLevel(logging.INFO)
+    app.logger.addHandler(file_handler)
+
+    app.logger.setLevel(logging.INFO)
+    app.logger.info(colored('Your Application startup', 'green'))
+
+
+def log_message(level, message):
+    color = 'white'  # default color
+    if level == 'INFO':
+        color = 'green'
+    elif level == 'WARNING':
+        color = 'yellow'
+    elif level == 'ERROR':
+        color = 'red'
+    elif level == 'DEBUG':
+        color = 'blue'
+
+    app.logger.log(logging.getLevelName(level), colored(message, color))
+
+
+# Usage
+log_message('INFO', 'This is an info message')
+log_message('ERROR', 'This is an error message')
+log_message('WARNING', 'This is a warning message')
+log_message('DEBUG', 'This is a debug message')
+
 
 @app.route('/health', methods=['GET'])
 def health():
@@ -124,6 +175,8 @@ def load_user(user_id):
 
 @app.route('/')
 def landing_page():
+    logging.info("Landing page accessed")
+
     with open('features.json', 'r') as f:
         features = json.load(f)
     return render_template('landing_page.html', features=features)
@@ -131,17 +184,17 @@ def landing_page():
 
 @app.route('/portal')
 def portal():
+    logging.info("Portal accessed")
     return render_template('home.html')
 
 
 @app.route("/register", methods=['GET', 'POST'])
 def register():
     from flask_mail import Message
+    logging.info("Register route accessed")
 
     form = RegistrationForm()
     if form.validate_on_submit():
-        print("Form Validated")  # Debug print statement
-
         user = User(
             first_name=form.first_name.data,
             last_name=form.last_name.data,
@@ -153,18 +206,16 @@ def register():
         )
         user.set_password(form.password.data)
 
-        db.session.add(user)
-        db.session.commit()
+        try:
+            db.session.add(user)
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            flash('Email already exists, please choose another one.', 'danger')
+            return render_template('register.html', form=form)
 
-        print("Database Commit Successful")  # Debug print statement
-
-        # Generate a token for email verification
         token = s.dumps(user.email, salt='email-confirm')
-
-        # Create a confirmation URL
         confirm_url = url_for('confirm_email', token=token, _external=True)
-
-        # Compose the email message
         msg = Message("Confirm your email",
                       sender=app.config['MAIL_USERNAME'],
                       recipients=[user.email])
@@ -184,12 +235,14 @@ The Support Team"""
         flash('A confirmation email has been sent to your email address. Please confirm your email to proceed.',
               'success')
         return redirect(url_for('email_sent'))
+    logging.info("Registration successful for username: %s", form.username.data)
 
     return render_template('register.html', form=form)
 
 
 @app.route("/email_sent")
 def email_sent():
+    logging.info("Email sent page accessed")
     return render_template('email_sent.html')
 
 
@@ -216,14 +269,56 @@ def confirm_email(token):
 @login_manager.unauthorized_handler
 def unauthorized():
     # Store the original URL the user was trying to access
+    logging.info("Unauthorized request")
     session['next_url'] = request.url
     return redirect(url_for('login'))
 
 
 @app.route('/logs_and_audits')
 def logs_and_audits():
-    # Your logic here
-    return render_template('logs_and_audits.html')
+    log_file_path = 'logs/system.log'
+
+    try:
+        with open(log_file_path, 'r') as file:
+            raw_logs = file.readlines()
+    except FileNotFoundError:
+        raw_logs = ['ERROR Log file not found.']
+
+    log_pattern = re.compile(
+        r'(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) (?P<level>INFO|WARNING|ERROR): (?P<message>.+)')
+
+    for raw_log in raw_logs:
+        match = log_pattern.search(raw_log)
+        if match:
+            logs.append({
+                'timestamp': match.group('timestamp'),
+                'level': match.group('level'),
+                'message': match.group('message').strip()
+            })
+
+    return render_template('logs_and_audits.html', logs=logs, active_page='logs_and_audits')
+
+
+@app.route('/change_log_level/<logId>/<newLevel>', methods=['POST'])
+def change_log_level(logId, newLevel):
+    global logs
+    for log in logs:
+        if log['id'] == logId:
+            log['level'] = newLevel
+            return jsonify(success=True)
+    return jsonify(success=False, error='Log not found'), 404
+
+
+@app.errorhandler(404)
+def page_not_found(e):
+    logging.error("404 error encountered: %s", str(e))
+    return render_template('404.html'), 404
+
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    logging.error("500 error encountered: %s", str(e))
+    return render_template('500.html'), 500
 
 
 @app.route("/login", methods=['GET', 'POST'])
@@ -264,6 +359,54 @@ def login():
     return render_template('login.html', form=form)
 
 
+@app.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    from flask_mail import Message
+
+    if request.method == 'POST':
+        email = request.form.get('email')
+        # Find user by email
+        user = User.query.filter_by(email=email).first()
+
+        if user:
+            # Generate reset token
+            token = user.get_reset_token()
+
+            # Send reset email
+            msg = Message('Password Reset Request', sender=app.config['MAIL_USERNAME'], recipients=[user.email])
+            msg.body = f'''To reset your password, visit the following link:
+{url_for('reset_password', token=token, _external=True)}
+If you did not make this request, please ignore this email.
+'''
+            mail.send(msg)
+            flash('A password reset link has been sent to your email address', 'info')
+            return redirect(url_for('login'))
+
+        else:
+            flash('No account found with that email address', 'error')
+
+    return render_template('forgot_password.html')
+
+
+@app.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    user = User.verify_reset_token(token)
+    if not user:
+        flash('That is an invalid or expired token', 'warning')
+        return redirect(url_for('forgot_password'))
+
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        hashed_password = User.set_password(form.password.data)
+        user.password = hashed_password
+        db.session.commit()
+        login_user(user)
+        flash('Your password has been updated! You are now logged in.', 'success')
+        return redirect(url_for('dashboard'))
+
+    return render_template('reset_password.html', title='Reset Password', form=form)
+
+
 @app.route("/logout")
 @login_required
 def logout():
@@ -274,11 +417,31 @@ def logout():
 @app.route("/dashboard")
 @login_required
 def dashboard():
+    # Query both lost and found items reported by the user
     lost_items = Item.query.filter_by(user_id=current_user.id, type='lost').all()
     found_items = Item.query.filter_by(user_id=current_user.id, type='found').all()
-    unread_messages_count = Message.query.filter_by(receiver_id=current_user.id, is_read=False).count()
 
-    return render_template('dashboard.html', lost_items=lost_items, found_items=found_items)
+    # Initialize dictionaries to hold the items and their associated claim status
+    lost_items_with_status = {}
+    found_items_with_status = {}
+
+    # Loop through the lost items and retrieve the associated claim status
+    for item in lost_items:
+        claim = Claim.query.filter_by(item_id=item.id).first()
+        status = claim.status if claim else "Not Claimed"
+        lost_items_with_status[item] = status
+
+    # Loop through the found items and retrieve the associated claim status
+    for item in found_items:
+        claim = Claim.query.filter_by(item_id=item.id).first()
+        status = claim.status if claim else "Not Claimed"
+        found_items_with_status[item] = status
+
+    return render_template(
+        'dashboard.html',
+        lost_items_with_status=lost_items_with_status,
+        found_items_with_status=found_items_with_status
+    )
 
 
 @app.route('/profile')
@@ -472,6 +635,7 @@ def report_item():
 
         # Create the item with the converted datetime
         item = Item(
+            name=form.name.data,
             description=form.description.data,
             category=form.category.data,
             location=form.location.data,
@@ -733,12 +897,21 @@ The Support Team
     return render_template('claim_item.html', item_id=item_id)
 
 
-@app.route('/claims_awaiting_verification')
-def claims_awaiting_verification():
-    # Retrieve and render the claims awaiting verification
-    claims = Claim.query.filter_by(claim_status='Pending').all()
+from flask import request
 
-    return render_template('claims_awaiting_verification.html', claims=claims)
+
+@app.route('/manage_claims')
+def manage_claims():
+    print(request.args.get('status'))
+    page = request.args.get('page', 1, type=int)
+    status = request.args.get('status', None)
+
+    if status == 'Verified' or status == 'Rejected' or status == 'Pending':
+        claims = Claim.query.filter_by(claim_status=status).paginate(page=page, per_page=10)
+    else:
+        claims = Claim.query.paginate(page=page, per_page=10)
+
+    return render_template('manage_claims.html', claims=claims, active_page='manage_claims', status=status)
 
 
 @app.route('/verify_claim/<int:claim_id>', methods=['POST'])
@@ -765,7 +938,7 @@ def verify_claim(claim_id):
 def uploaded_file(filename):
     from flask import send_from_directory
 
-    return send_from_directory(app.config[' CLAIMS_DOCUMENT_UPLOAD_FOLDER'], filename)
+    return send_from_directory(app.config['CLAIMS_DOCUMENT_UPLOAD_FOLDER'], filename)
 
 
 @app.route('/reject_claim/<int:claim_id>', methods=['POST'])
@@ -851,11 +1024,21 @@ def admin_required(f):
 @login_required
 @admin_required
 def admin_dashboard():
-    claims = Claim.query.filter_by(claim_status='Pending').all()
-    users = User.query.all()  # Retrieve all users
-    items = Item.query.all()  # Retrieve all reported items
-    # Pass the User model to the template
-    return render_template('admin_dashboard.html', users=users, items=items, User=User)
+    try:
+        claim_page = request.args.get('claim_page', 1, type=int)
+        user_page = request.args.get('user_page', 1, type=int)
+        item_page = request.args.get('item_page', 1, type=int)
+
+        claims = Claim.query.filter_by(claim_status='PENDING').paginate(page=claim_page, per_page=10)
+        users = User.query.paginate(page=user_page, per_page=10)
+        items = Item.query.paginate(page=item_page, per_page=10)
+
+        return render_template('admin_dashboard.html', users=users, items=items, User=User, claims=claims,
+                               active_page='admin_dashboard')
+    except Exception as e:
+        print(f"Error occurred: {e}")
+        flash('An error occurred. Please try again later.', 'error')
+        return redirect(url_for('admin_dashboard'))
 
 
 @app.route('/admin/manage_users', methods=['GET', 'POST'])
@@ -882,7 +1065,7 @@ def manage_users():
         db.session.commit()
         return redirect(url_for('manage_users'))
 
-    return render_template('admin_manage_users.html', users=users)
+    return render_template('admin_manage_users.html', users=users, active_page='manage_users')
 
 
 @app.route('/admin/manage_items', methods=['GET', 'POST'])
@@ -905,7 +1088,7 @@ def manage_items():
         db.session.commit()
         return redirect(url_for('manage_items'))
 
-    return render_template('admin_manage_items.html', items=items)
+    return render_template('admin_manage_items.html', items=items, active_page='manage_items')
 
 
 @app.route('/admin/statistics')
@@ -918,7 +1101,7 @@ def statistics():
     # Add more statistics as needed
 
     return render_template('admin_statistics.html', total_users=total_users, total_items=total_items,
-                           total_messages=total_messages)
+                           total_messages=total_messages, active_page='statistics')
 
 
 # Function to generate and print a new token every hour
@@ -967,6 +1150,14 @@ def register_admin(token):
     return render_template('register_admin.html', form=form)
 
 
+@app.route('/user_detail/<int:user_id>', methods=['GET'])
+@login_required
+def user_detail(user_id):
+    user = User.query.get_or_404(user_id)
+    # Further code to load user details and render a template
+    return render_template('user_detail.html', user=user)
+
+
 @app.route('/admin/metrics')
 @login_required
 @admin_required
@@ -981,11 +1172,9 @@ def admin_metrics():
     recent_items = Item.query.filter(Item.created_at > datetime.utcnow() - timedelta(days=7)).count()
     items_by_category = db.session.query(Item.category, db.func.count(Item.category)).group_by(Item.category).all()
 
-    # ... add more metrics as needed
-
     return render_template('admin_metrics.html', total_users=total_users, recent_users=recent_users,
                            recent_logins=recent_logins, total_items=total_items,
-                           recent_items=recent_items, items_by_category=items_by_category)
+                           recent_items=recent_items, items_by_category=items_by_category, active_page='admin_metrics')
 
 
 for rule in app.url_map.iter_rules():
@@ -994,4 +1183,4 @@ for rule in app.url_map.iter_rules():
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
-    socketio.run(app, debug=True, use_reloader=False)
+    socketio.run(app, debug=True)  # , use_reloader=False

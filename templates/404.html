@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5 text-center">
+    <img src="{{ url_for('static', filename='images/360_F_135882430_6Ytw6sJKC5jg8ovh18XjAHuMXcS7mlai.jpg') }}" alt="Funny 404" class="img-fluid"/>
+    <p class="lead">
+        It seems like you've found our secret garden...<br>
+        Unfortunately, there's nothing to see here.
+    </p>
+    <a href="{{ url_for('landing_page') }}" class="btn btn-primary btn-lg">Return to Home</a>
+</div>
+{% endblock %}

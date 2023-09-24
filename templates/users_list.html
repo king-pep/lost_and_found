@@ -1,0 +1,7 @@
+{% if users.items %}
+    {% for user in users.items %}
+        <li class="list-group-item">{{ user.username }} - {{ user.email }}</li>
+    {% endfor %}
+{% else %}
+    <li class="list-group-item">No recent users</li>
+{% endif %}

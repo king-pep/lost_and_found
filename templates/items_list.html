@@ -1,0 +1,8 @@
+{% if items.items %}
+    {% for item in items.items %}
+        {% set user = User.query.get(item.user_id) %}
+        <li class="list-group-item">{{ item.description }} - Reported by {{ user.username }}</li>
+    {% endfor %}
+{% else %}
+    <li class="list-group-item">No recent reported items</li>
+{% endif %}

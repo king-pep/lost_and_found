@@ -1,1 +1,130 @@
-<p>Logs N Metrics</p>
+{% extends 'base.html' %}
+
+{% block content %}
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+        }
+
+        .container {
+            margin-top: 20px;
+        }
+
+        .log {
+            transition: box-shadow 0.3s ease-in-out;
+        }
+
+        .log:hover {
+            box-shadow: 0px 0px 15px 0px rgba(0, 0, 0, 0.2);
+        }
+
+        .INFO {
+            background-color: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+
+        .WARNING {
+            background-color: #ffeeba;
+            color: #856404;
+            border-color: #ffeeba;
+        }
+
+        .ERROR {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+
+        .select {
+            margin: 20px;
+        }
+
+        .level-display {
+            display: inline-block;
+            padding: 5px 10px;
+            margin: 2px;
+            border-radius: 3px;
+            color: #fff;
+            text-align: center;
+        }
+
+        .INFO.level-display {
+            background-color: #28a745;
+        }
+
+        .WARNING.level-display {
+            background-color: #ffc107;
+        }
+
+        .ERROR.level-display {
+            background-color: #dc3545;
+        }
+
+        .table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        .table, .th, .td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: left;
+        }
+
+        .th {
+            background-color: #f2f2f2;
+        }
+    </style>
+
+    <script>
+        function filterLogs() {
+            var selectedLevel = document.getElementById("logLevel").value;
+            var logs = document.querySelectorAll(".log");
+
+            logs.forEach(log => {
+                if (selectedLevel === "ALL" || log.classList.contains(selectedLevel)) {
+                    log.style.display = "";
+                } else {
+                    log.style.display = "none";
+                }
+            });
+        }
+    </script>
+
+    {% include 'admin_navbar.html' %}
+
+    <div class="container mt-4">
+        <h1>Logs and Audits</h1>
+        <div class="select">
+            <label for="logLevel">Filter by level:</label>
+            <select id="logLevel" onchange="filterLogs()">
+                <option value="ALL" selected>ALL</option>
+                <option value="INFO">INFO</option>
+                <option value="WARNING">WARNING</option>
+                <option value="ERROR">ERROR</option>
+            </select>
+        </div>
+        <table class="table mt-4">
+            <thead>
+                <tr>
+                    <th class="th">Timestamp</th>
+                    <th class="th">Level</th>
+                    <th class="th">Message</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr id="log-{{ log.id }}" class="log {{ log.level }}">
+                    <td class="td">{{ log.timestamp }}</td>
+                    <td class="td">
+                        <div class="level-display {{ log.level }}">{{ log.level }}</div>
+                    </td>
+                    <td class="td">{{ log.message }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

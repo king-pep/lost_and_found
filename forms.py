@@ -47,7 +47,14 @@ class LoginForm(FlaskForm):
     submit = SubmitField('Login')
 
 
+class ResetPasswordForm(FlaskForm):
+    password = PasswordField('Password', validators=[DataRequired()])
+    confirm_password = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password')])
+    submit = SubmitField('Reset Password')
+
+
 class ItemForm(FlaskForm):
+    name = StringField('Name', validators=[DataRequired()])
     description = TextAreaField('Description', validators=[DataRequired(), Length(min=10, max=300)])
     category = SelectField('Category', choices=[
         ('Electronics', 'Electronics'),

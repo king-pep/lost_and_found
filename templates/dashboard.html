@@ -3,51 +3,68 @@
 {% block content %}
 <div class="container mt-4">
     <!-- Welcome Block -->
-    <div class="jumbotron">
+    <div class="jumbotron text-center">
         <h1 class="display-4">Welcome, {{ current_user.username }}!</h1>
-        <p class="lead">Here you can manage and view your lost and found items.</p>
+        <p class="lead">Manage and view your lost and found items seamlessly.</p>
+        <hr class="my-4">
+        <p>Use the dashboard to get a quick overview of your items and their statuses.</p>
     </div>
 
-    <!-- Lost Items Block -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h4>My Lost Items</h4>
+
+
+    <!-- Dashboard Cards -->
+    <div class="row">
+        <!-- Lost Items Card -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h4><i class="bi bi-box-arrow-in-down"></i> My Lost Items</h4>
+                </div>
+                <div class="card-body">
+                    {% if lost_items_with_status %}
+                    <ul class="list-group">
+                        {% for item, status in lost_items_with_status.items() %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ item.description }} - {{ item.location }}
+                            <span class="badge bg-secondary rounded-pill">{{ status }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p>You haven't reported any lost items yet.</p>
+                    {% endif %}
+                </div>
+            </div>
         </div>
-        <div class="card-body">
-            {% if lost_items %}
-            <ul>
-                {% for item in lost_items %}
-                <li>{{ item.description }} - {{ item.location }} ({{ item.time.strftime('%Y-%m-%d %H:%M') }})</li>
-                {% endfor %}
-            </ul>
-            {% else %}
-            <p>You haven't reported any lost items yet.</p>
-            {% endif %}
+
+        <!-- Found Items Card -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <h4><i class="bi bi-box-arrow-in-up"></i> My Found Items</h4>
+                </div>
+                <div class="card-body">
+                    {% if found_items_with_status %}
+                    <ul class="list-group">
+                        {% for item, status in found_items_with_status.items() %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ item.description }} - {{ item.location }}
+                            <span class="badge bg-secondary rounded-pill">{{ status }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p>You haven't reported any found items yet.</p>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Found Items Block -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h4>My Found Items</h4>
-        </div>
-        <div class="card-body">
-            {% if found_items %}
-            <ul>
-                {% for item in found_items %}
-                <li>{{ item.description }} - {{ item.location }} ({{ item.time.strftime('%Y-%m-%d %H:%M') }})</li>
-                {% endfor %}
-            </ul>
-            {% else %}
-            <p>You haven't reported any found items yet.</p>
-            {% endif %}
-        </div>
-    </div>
-
-     <!-- Action Buttons -->
-    <div class="text-center">
-        <a href="{{ url_for('report_item') }}" class="btn btn-primary">Report an Item</a>
-            <a href="{{ url_for('profile') }}" class="btn btn-secondary">View Profile</a>
+    <!-- Action Buttons -->
+    <div class="text-center mt-4">
+        <a href="{{ url_for('report_item') }}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Report an Item</a>
+        <a href="{{ url_for('profile') }}" class="btn btn-secondary"><i class="bi bi-person"></i> View Profile</a>
     </div>
 </div>
 {% endblock %}

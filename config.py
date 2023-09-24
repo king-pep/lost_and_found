@@ -7,7 +7,7 @@ class Config:
     MAIL_SERVER = 'smtp.gmail.com'
     MAIL_PORT = 465
     MAIL_USERNAME = 'benam.telkom@gmail.com'  # Replace with your actual email
-    MAIL_PASSWORD = 'MAIL_PASSWORD'  # Replace with your actual password
+    MAIL_PASSWORD = 'PASSWORD'  # Replace with your actual password
     MAIL_USE_TLS = False
     MAIL_USE_SSL = True
 

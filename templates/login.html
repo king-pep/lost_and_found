@@ -1,28 +1,150 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card border-primary">
-            <div class="card-header bg-primary text-white">
-                <h4>Login</h4>
+<style>
+    /* Include the CSS from the blueprint here */
+    @import url('https://fonts.googleapis.com/css2?family=Mulish&display=swap');
+
+    :root {
+        --primary: #4978F0;
+        --primary-light: #E1EEF5;
+        --secondary: #1D1D1D;
+        --background: #F4F1FF;
+        --text: #1F2346;
+    }
+
+    body {
+        font-size: 16px;
+        font-family: Mulish;
+        background-color: var(--background);
+    }
+
+    /* Rest of the CSS from the blueprint */
+    .login-wrapper {
+        position: relative;
+        display: grid;
+        grid-template-columns: 4fr 3fr;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .my-form__wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 32px;
+        max-width: 460px;
+        width: 100%;
+        padding: 48px 32px;
+        height: fit-content;
+        box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+    }
+    .my-form__button {
+    background-color: var(--primary);
+    color: white;
+    white-space: nowrap;
+    border: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 16px;
+    line-height: 50px;
+    outline: none;
+    font-size: 18px;
+    letter-spacing: .025em;
+    text-decoration: none;
+    cursor: pointer;
+    font-weight: 800;
+    min-height: 50px;
+    width: 100%;
+    border-radius: 8px;
+    box-shadow: 0 5px 10px rgba(0,0,0,.15);
+    transition: all .3s ease;
+    -webkit-transition: all .3s ease;
+}
+
+    /* Additional styles required for form */
+    .flashes {
+        margin-bottom: 20px;
+    }
+
+    .alert {
+        padding: 10px;
+        margin-bottom: 10px;
+        border: 1px solid transparent;
+        border-radius: 4px;
+    }
+
+    .alert-info {
+        color: #31708f;
+        background-color: #d9edf7;
+        border-color: #bce8f1;
+    }
+
+    /* Additional styles for responsive design */
+    @media (max-width: 640px) {
+        .login-wrapper {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="login-wrapper">
+    <div class="login-side">
+        <!-- Render Flash Messages -->
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="flashes">
+            {% for message in messages %}
+            <div class="alert alert-info" role="alert">
+                {{ message }}
             </div>
-            <div class="card-body">
-                <form method="post">
-                    {{ form.hidden_tag() }}
-                    <div class="form-group">
-                        {{ form.email.label(class="form-label") }}
-                        {{ form.email(class="form-control") }}
-                    </div>
-                    <div class="form-group">
-                        {{ form.password.label(class="form-label") }}
-                        {{ form.password(class="form-control") }}
-                    </div>
-                    <div class="form-group text-center">
-                        {{ form.submit(class="btn btn-primary") }}
-                    </div>
-                </form>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <div class="my-form__wrapper">
+            <div class="login-welcome-row">
+                <h1>Welcome back &#x1F44F;</h1>
+                <p>Please enter your details!</p>
             </div>
+            <form method="post" class="my-form">
+                {{ form.hidden_tag() }}
+
+                <div class="text-field">
+                    {{ form.email.label }}
+                    {{ form.email(id="email", class="form-control", placeholder="Your Email") }}
+<!--                    <img alt="Email Icon" title="Email Icon" src="static/assets/email.svg">-->
+                </div>
+
+                <div class="text-field">
+                    {{ form.password.label }}
+                    {{ form.password(id="password", class="form-control", placeholder="Your Password") }}
+<!--                    <img alt="Password Icon" title="Password Icon" src="static/assets/password.svg">-->
+                </div>
+
+                <input type="submit" class="my-form__button" value="Login">
+            </form>
+
+            <div class="my-form__actions">
+                <div class="my-form__row">
+                    <span>Did you forget your password?</span>
+                    <a href="{{ url_for('forgot_password') }}" title="Reset Password">Reset Password</a>
+                </div>
+                <div class="my-form__signup">
+                    <a  href="{{ url_for('register') }}" title="Create Account">Create Account</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="info-side">
+        <div class="welcome-message">
+            <h2>Lost and found Portal! 👋</h2>
+            <p>
+       Your ultimate companion in reconnecting people with their lost items. Let's create a helpful community together!
+            </p>
         </div>
     </div>
 </div>

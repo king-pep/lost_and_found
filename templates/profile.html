@@ -1,19 +1,70 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="card">
-        <div class="card-header">
-            <h4>Your Profile</h4>
-        </div>
-        <div class="card-body">
-            <h5>First Name: {{ current_user.first_name }}</h5>
-            <h5>Last Name: {{ current_user.last_name }}</h5>
-            <h5>Username: {{ current_user.username }}</h5>
-            <h5>Email: {{ current_user.email }}</h5>
-            <h5>Phone: {{ current_user.phone }}</h5>
-            <h5>Profile Visibility: {{ current_user.profile_visibility }}</h5>
+    <style>
+        :root {
+            --background: #D8E3FA;
+            --gray: #EAEAEC;
+            --primary: #29283F;
+            --primary-violet: #7370F4;
+        }
+
+        body {
+            background-color: var(--background);
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .container {
+            margin-top: 20px;
+        }
+
+        .card {
+            border-radius: 24px;
+            background-color: white;
+            cursor: pointer;
+            overflow: hidden;
+            max-width: clamp(320px, 70vw, 740px);
+            min-width: 320px;
+            min-height: 280px;
+            box-shadow: rgba(0, 0, 0, 0.1) 0px 1px 4px;
+        }
+
+        .card:hover {
+            box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+        }
+
+        .card-header {
+            background-color: var(--primary-violet);
+            color: white;
+            padding: 10px;
+            text-align: center;
+            font-size: 1.5em;
+        }
+
+        .card-body {
+            padding: 16px;
+        }
+
+        .card-body h5 {
+            margin: 6px 0;
+            font-size: 1.1em;
+        }
+
+    </style>
+
+    <div class="container mt-4">
+        <div class="card">
+            <div class="card-header">
+                <h4>Your Profile</h4>
+            </div>
+            <div class="card-body">
+                <h5>First Name: {{ current_user.first_name }}</h5>
+                <h5>Last Name: {{ current_user.last_name }}</h5>
+                <h5>Username: {{ current_user.username }}</h5>
+                <h5>Email: {{ current_user.email }}</h5>
+                <h5>Phone: {{ current_user.phone }}</h5>
+                <h5>Profile Visibility: {{ current_user.profile_visibility }}</h5>
+            </div>
         </div>
     </div>
-</div>
 {% endblock %}

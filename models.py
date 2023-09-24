@@ -37,6 +37,7 @@ class User(UserMixin, db.Model):
 
 class Item(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False, index=True)  # Added index
     description = db.Column(db.String(300), nullable=False, index=True)  # Added index
     category = db.Column(db.String(100), nullable=False, index=True)  # Added index
     location = db.Column(db.String(200), nullable=False, index=True)  # Added index

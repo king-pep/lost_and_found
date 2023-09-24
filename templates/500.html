@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div class="container mt-5">
+        <h1 class="display-1">500</h1>
+        <h2 class="display-4">Internal Server Error</h2>
+        <p class="lead">Sorry, something went wrong on our end. Our team has been notified. Please try again later or go back to the <a href="{{ url_for('landing_page') }}">home page</a>.</p>
+    </div>
+{% endblock %}

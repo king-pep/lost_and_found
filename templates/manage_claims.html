@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Manage Claims</h2>
+
+    {% include 'admin_navbar.html' %}
+
+    <!-- Status Filter -->
+    <form class="mb-4" action="{{ url_for('manage_claims') }}" method="get">
+        <select name="status" onchange="this.form.submit()" class="form-select">
+            <option value="">{{status}}</option>
+            <option value="All">All</option>
+            <option value="Verified">Verified</option>
+            <option value="Pending">Pending</option>
+            <option value="Rejected">Rejected</option>
+        </select>
+    </form>
+
+
+    <table class="table table-bordered table-hover">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>User</th>
+            <th>Item</th>
+            <th>Submitted Proof</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for claim in claims.items %}
+        <tr>
+            <td>{{ claim.id }}</td>
+            <td>{{ claim.user.username }}</td>
+            <td>{{ claim.item.name }}</td>
+            <td>{{ claim.submitted_proof }}</td>
+            <td>
+                {% if claim.submitted_proof %}
+                <a href="{{ url_for('uploaded_file', filename=claim.submitted_proof) }}" target="_blank"
+                   class="btn btn-info">View Proof</a>
+                {% endif %}
+
+                {% if claim.claim_status != 'Verified' %}
+                <form method="post" action="{{ url_for('verify_claim', claim_id=claim.id) }}" class="d-inline-block">
+                    <button type="submit" class="btn btn-success">Verify</button>
+                </form>
+                {% endif %}
+
+                {% if claim.claim_status == 'Verified' %}
+                <form method="post" action="{{ url_for('reject_claim', claim_id=claim.id) }}" class="d-inline-block">
+                    <button type="submit" class="btn btn-danger">Reject</button>
+                </form>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="pagination">
+        <a href="{{ url_for('manage_claims', page=claims.prev_num) }}"
+           class="{{ 'disabled' if not claims.has_prev }}">Prev</a>
+        <a href="{{ url_for('manage_claims', page=claims.next_num) }}"
+           class="{{ 'disabled' if not claims.has_next }}">Next</a>
+    </div>
+</div>  <!-- End of container -->
+{% endblock %}

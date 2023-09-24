@@ -1,0 +1,9 @@
+<div class="mb-2">
+    <span class="mr-2">Page {{ items.page }} of {{ items.pages }}</span>
+    <a class="btn btn-outline-secondary btn-sm"
+       href="{{ url_for('admin_dashboard', **{type+'_page': items.prev_num}) if items.has_prev else '#' }}"
+       {{ 'disabled=true' if not items.has_prev }}>Prev</a>
+    <a class="btn btn-outline-secondary btn-sm"
+       href="{{ url_for('admin_dashboard', **{type+'_page': items.next_num}) if items.has_next else '#' }}"
+       {{ 'disabled=true' if not items.has_next }}>Next</a>
+</div>

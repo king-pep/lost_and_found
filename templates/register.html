@@ -20,27 +20,37 @@
             {% endif %}
             {% endwith %}
             <div class="card-body">
-                <form method="post">
+                <form method="post" id="registrationForm">
                     {{ form.hidden_tag() }}
                     <div class="form-group">
                         {{ form.first_name.label(class="form-label") }}
-                        {{ form.first_name(class="form-control") }}
+                        {{ form.first_name(class="form-control", id="firstNameField") }}
                     </div>
                     <div class="form-group">
                         {{ form.last_name.label(class="form-label") }}
-                        {{ form.last_name(class="form-control") }}
+                        {{ form.last_name(class="form-control", id="lastNameField") }}
                     </div>
                     <div class="form-group">
                         {{ form.username.label(class="form-label") }}
-                        {{ form.username(class="form-control") }}
-                    </div>
-                    <div class="form-group">
-                        {{ form.email.label(class="form-label") }}
-                        {{ form.email(class="form-control") }}
+                        {{ form.username(class="form-control", id="usernameField") }}
                     </div>
                     <div class="form-group">
                         {{ form.phone.label(class="form-label") }}
-                        {{ form.phone(class="form-control") }}
+                        {{ form.phone(class="form-control", id="phoneField") }}
+                        <div id="phoneRequirements" class="alert alert-info">
+                            <ul>
+                                <li id="phoneValidReq">Valid Phone Number (10 digits)</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        {{ form.email.label(class="form-label") }}
+                        {{ form.email(class="form-control", id="emailField") }}
+                        <div id="emailRequirements" class="alert alert-info">
+                            <ul>
+                                <li id="emailValidReq">Valid Email Address</li>
+                            </ul>
+                        </div>
                     </div>
                     <div class="form-group">
                         {{ form.profile_visibility.label }}
@@ -48,18 +58,76 @@
                     </div>
                     <div class="form-group">
                         {{ form.password.label(class="form-label") }}
-                        {{ form.password(class="form-control") }}
+                        {{ form.password(class="form-control", id="passwordField") }}
+                        <div id="passwordRequirements" class="alert alert-info">
+                            <ul>
+                                <li id="lengthReq">At least 8 characters long</li>
+                                <li id="numberReq">Contains a number</li>
+                                <li id="uppercaseReq">Contains an uppercase letter</li>
+                                <li id="lowercaseReq">Contains a lowercase letter</li>
+                                <li id="specialCharReq">Contains a special character (!@#$%^&*)</li>
+                                <li id="noSpaceReq">Does not contain spaces</li>
+                                <li id="notContainReq">Does not contain username, first name, last name, or email parts</li>
+                            </ul>
+                        </div>
                     </div>
                     <div class="form-group">
                         {{ form.confirm_password.label(class="form-label") }}
-                        {{ form.confirm_password(class="form-control") }}
+                        {{ form.confirm_password(class="form-control", id="confirmPasswordField") }}
+                        <div id="confirmPasswordRequirements" class="alert alert-info">
+                            <ul>
+                                <li id="confirmPasswordReq">Passwords do not match</li>
+                            </ul>
+                        </div>
                     </div>
                     <div class="form-group text-center">
-                        {{ form.submit(class="btn btn-primary") }}
+                        {{ form.submit(class="btn btn-primary", id="registerButton", disabled="disabled") }}
                     </div>
                 </form>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+document.getElementById("passwordField").addEventListener("input", validateForm);
+document.getElementById("confirmPasswordField").addEventListener("input", validateForm);
+document.getElementById("phoneField").addEventListener("input", validateForm);
+document.getElementById("emailField").addEventListener("input", validateForm);
+document.getElementById("firstNameField").addEventListener("input", validateForm);
+document.getElementById("lastNameField").addEventListener("input", validateForm);
+document.getElementById("usernameField").addEventListener("input", validateForm);
+
+function validateForm() {
+    let password = document.getElementById("passwordField").value;
+    let confirmPassword = document.getElementById("confirmPasswordField").value;
+    let phone = document.getElementById("phoneField").value;
+    let email = document.getElementById("emailField").value;
+    let firstName = document.getElementById("firstNameField").value;
+    let lastName = document.getElementById("lastNameField").value;
+    let username = document.getElementById("usernameField").value;
+
+    // Password Validation
+    document.getElementById("lengthReq").style.display = (password.length >= 8) ? "none" : "list-item";
+    document.getElementById("numberReq").style.display = (/\d/.test(password)) ? "none" : "list-item";
+    document.getElementById("uppercaseReq").style.display = (/[A-Z]/.test(password)) ? "none" : "list-item";
+    document.getElementById("lowercaseReq").style.display = (/[a-z]/.test(password)) ? "none" : "list-item";
+    document.getElementById("specialCharReq").style.display = (/[!@#$%^&*]/.test(password)) ? "none" : "list-item";
+    document.getElementById("noSpaceReq").style.display = (!/\s/.test(password)) ? "none" : "list-item";
+    document.getElementById("notContainReq").style.display = (!password.includes(username) && !password.includes(firstName) && !password.includes(lastName) && !password.includes(email.split("@")[0])) ? "none" : "list-item";
+
+    // Confirm Password Validation
+    document.getElementById("confirmPasswordReq").style.display = (password === confirmPassword) ? "none" : "list-item";
+
+    // Phone Validation
+    document.getElementById("phoneValidReq").style.display = (/^\d{10}$/.test(phone)) ? "none" : "list-item";
+
+    // Email Validation
+    document.getElementById("emailValidReq").style.display = (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) ? "none" : "list-item";
+
+    // Enable/Disable Register Button based on form validity
+    let isFormValid = password.length >= 8 && /\d/.test(password) && /[A-Z]/.test(password) && /[a-z]/.test(password) && /[!@#$%^&*]/.test(password) && !/\s/.test(password) && password === confirmPassword && /^\d{10}$/.test(phone) && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    document.getElementById("registerButton").disabled = !isFormValid;
+}
+</script>
 {% endblock %}

@@ -3,78 +3,72 @@
 {% block content %}
 <div class="container mt-5">
     <h2 class="mb-4">Admin Dashboard</h2>
+    {% include 'admin_navbar.html' %}
 
-    <!-- Navigation Links for Admin Functions -->
-    <div class="mb-4">
-        <nav class="nav nav-pills">
-            <a class="nav-link active" href="{{ url_for('manage_users') }}">Manage Users</a>
-            <a class="nav-link" href="{{ url_for('manage_items') }}">Manage Reported Items</a>
-            <a class="nav-link" href="{{ url_for('claims_awaiting_verification') }}">Verify Claims</a>
-            <a class="nav-link" href="{{ url_for('statistics') }}">View System Statistics</a>
-            <a class="nav-link" href="{{ url_for('admin_metrics') }}">View Admin Metrics</a>
-        </nav>
+    <!-- Flash Messages Section -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }} alert-dismissible" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-bs-dismiss="alert">&times;</button>
     </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
 
-    <!-- Claims Verification Section -->
-    <div class="card mb-4">
-        <div class="card-header">Claims Awaiting Verification</div>
-        <table class="table">
-            <thead>
-            <tr>
-                <th>ID</th>
-                <th>Item ID</th>
-                <th>User ID</th>
-                <th>Claim Status</th>
-                <th>Submitted Proof</th>
-                <th>Actions</th>
-            </tr>
-            </thead>
-            <tbody>
-            {% for claim in claims %}
-            <tr>
-                <td>{{ claim.id }}</td>
-                <td>{{ claim.item_id }}</td>
-                <td>{{ claim.user_id }}</td>
-                <td>{{ claim.claim_status }}</td>
-                <td>{{ claim.submitted_proof }}</td>
-                <td>
-                    {% if claim.submitted_proof %}
-                    <a href="{{ url_for('uploads', filename=claim.submitted_proof) }}" target="_blank"
-                       class="btn btn-info">View Proof</a>
+    <!-- Dashboard Cards Section -->
+    <div class="row">
+        <!-- Recent Users Card -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100 border-primary">
+                <div class="card-header bg-primary text-white">Recent Users</div>
+                <ul class="list-group list-group-flush">
+                    {% if users.items %}
+                    {% for user in users.items %}
+                    <li class="list-group-item">{{ user.username }} - {{ user.email }}</li>
+                    {% endfor %}
+                    {% else %}
+                    <li class="list-group-item">No recent users</li>
                     {% endif %}
-                    <form method="post" action="{{ url_for('verify_claim', claim_id=claim.id) }}">
-                        <button type="submit" class="btn btn-success">Verify</button>
-                    </form>
-                    <form method="post" action="{{ url_for('reject_claim', claim_id=claim.id) }}">
-                        <button type="submit" class="btn btn-danger">Reject</button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
+                </ul>
+                <div class="card-footer text-muted">
+                    <span class="mr-2">Page {{ users.page }} of {{ users.pages }}</span>
+                    <a class="btn btn-outline-primary btn-sm"
+                       href="{{ url_for('admin_dashboard', user_page=users.prev_num) if users.has_prev else '#' }}"
+                       {{ 'disabled' if not users.has_prev }}>Prev</a>
+                    <a class="btn btn-outline-primary btn-sm"
+                       href="{{ url_for('admin_dashboard', user_page=users.next_num) if users.has_next else '#' }}"
+                       {{ 'disabled' if not users.has_next }}>Next</a>
+                </div>
+            </div>
+        </div>
 
-
-    <!-- Recent Users Section -->
-    <div class="card mb-4">
-        <div class="card-header">Recent Users</div>
-        <ul class="list-group list-group-flush">
-            {% for user in users %}
-            <li class="list-group-item">{{ user.username }} - {{ user.email }}</li>
-            {% endfor %}
-        </ul>
-    </div>
-
-    <!-- Recent Reported Items Section -->
-    <div class="card">
-        <div class="card-header">Recent Reported Items</div>
-        <ul class="list-group list-group-flush">
-            {% for item in items %}
-            {% set user = User.query.get(item.user_id) %}
-            <li class="list-group-item">{{ item.description }} - Reported by {{ user.username }}</li>
-            {% endfor %}
-        </ul>
+        <!-- Recent Reported Items Card -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100 border-success">
+                <div class="card-header bg-success text-white">Recent Reported Items</div>
+                <ul class="list-group list-group-flush">
+                    {% if items.items %}
+                    {% for item in items.items %}
+                    {% set user = User.query.get(item.user_id) %}
+                    <li class="list-group-item">{{ item.description }} - Reported by {{ user.username }}</li>
+                    {% endfor %}
+                    {% else %}
+                    <li class="list-group-item">No recent reported items</li>
+                    {% endif %}
+                </ul>
+                <div class="card-footer text-muted">
+                    <span class="mr-2">Page {{ items.page }} of {{ items.pages }}</span>
+                    <a class="btn btn-outline-success btn-sm"
+                       href="{{ url_for('admin_dashboard', item_page=items.prev_num) if items.has_prev else '#' }}"
+                       {{ 'disabled' if not items.has_prev }}>Prev</a>
+                    <a class="btn btn-outline-success btn-sm"
+                       href="{{ url_for('admin_dashboard', item_page=items.next_num) if items.has_next else '#' }}"
+                       {{ 'disabled' if not items.has_next }}>Next</a>
+                </div>
+            </div>
+        </div>
     </div>
 </div>  <!-- End of container -->
 {% endblock %}

@@ -1,0 +1,20 @@
+<!-- admin_navbar.html -->
+<div class="mb-4">
+    <nav class="nav nav-pills">
+        <a class="nav-link {{ 'active' if active_page == 'admin_dashboard' else '' }}"
+           href="{{ url_for('admin_dashboard') }}">Home</a>
+
+        <a class="nav-link {{ 'active' if active_page == 'manage_users' else '' }}"
+           href="{{ url_for('manage_users') }}">Manage Users</a>
+        <a class="nav-link {{ 'active' if active_page == 'manage_items' else '' }}"
+           href="{{ url_for('manage_items') }}">Manage Reported Items</a>
+        <a class="nav-link {{ 'active' if active_page == 'manage_claims' else '' }}"
+           href="{{ url_for('manage_claims') }}">Manage Claims</a>
+        <a class="nav-link {{ 'active' if active_page == 'statistics' else '' }}" href="{{ url_for('statistics') }}">View
+            System Statistics</a>
+        <a class="nav-link {{ 'active' if active_page == 'admin_metrics' else '' }}"
+           href="{{ url_for('admin_metrics') }}">View Admin Metrics</a>
+        <a class="nav-link {{ 'active' if active_page == 'logs_and_audits' else '' }}" href="{{ url_for('logs_and_audits') }}">View
+            System Logs</a>
+    </nav>
+</div>
