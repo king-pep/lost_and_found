@@ -7,11 +7,16 @@ WORKDIR /app
 # Set up a virtual environment
 RUN python -m venv venv
 
-# Copy the current directory contents into the container at /app
+# Copy only the requirements file and install the dependencies
+COPY requirements.txt .
+RUN . venv/bin/activate && pip install --no-cache-dir -r requirements.txt
+
+# Copy the rest of the application code
 COPY . /app
 
-# Activate the virtual environment and install the dependencies
-RUN . venv/bin/activate && pip install --no-cache-dir -r requirements.txt
+# Create a non-root user and change the ownership of the app files
+RUN useradd -m myuser && chown -R myuser /app
+USER myuser
 
 # Make port 8000 available to the world outside this container
 EXPOSE 8000

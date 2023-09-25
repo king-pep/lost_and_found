@@ -1,35 +1,37 @@
 import json
 import logging
-from datetime import datetime
+import os
+import re
+import time
 import uuid
+from datetime import datetime
+from datetime import timedelta
 from functools import wraps
+from logging.handlers import RotatingFileHandler
 from secrets import token_urlsafe
-from apscheduler.schedulers.background import BackgroundScheduler
 
-from flask_mail import Mail
-from flask_socketio import emit, SocketIO
-from prometheus_flask_exporter import PrometheusMetrics
-from sqlalchemy import or_, and_
-from itsdangerous import URLSafeTimedSerializer
-from flask import Flask, render_template, redirect, url_for, flash, request, jsonify, g, current_app, abort
+import flask
+import numpy as np
+from apscheduler.schedulers.background import BackgroundScheduler
+from flask import Flask, render_template, redirect, url_for, flash, jsonify, g, current_app, abort, Response, request
 from flask import session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from flask_mail import Mail
 from flask_migrate import Migrate
-from flask_wtf import form
-from datetime import timedelta
-
+from flask_socketio import SocketIO
+from itsdangerous import URLSafeTimedSerializer
+from keras.src.applications import MobileNetV2
+from keras.src.applications.convnext import preprocess_input, decode_predictions
+from prometheus_client import Histogram, generate_latest, REGISTRY, Counter
+from sqlalchemy import or_, and_
 from sqlalchemy.exc import IntegrityError
 from termcolor import colored
-from werkzeug.security import generate_password_hash
-import logging
-from logging.handlers import RotatingFileHandler
+from werkzeug.utils import secure_filename
+
 from config import Config
 from forms import RegistrationForm, LoginForm, ItemForm, AdminRegistrationForm, ResetPasswordForm
-from models import User, db, Item, Message, Conversation, Claim, Notification  # Import db from models
-import os
-from werkzeug.utils import secure_filename
-from collections import Counter
-import re
+from models import User, db, Item, Message, Conversation, Claim  # Import db from models
+from PIL import Image
 
 # from keras.preprocessing import image as kimage
 # from keras.applications.vgg16 import VGG16, preprocess_input
@@ -52,21 +54,29 @@ migrate = Migrate(app, db)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 # metrics = PrometheusMetrics(app)
-metrics = PrometheusMetrics(app, path="/prom_metrics")
+# metrics = PrometheusMetrics(app)
 s = URLSafeTimedSerializer(app.config["SECRET_KEY"])
 logging.basicConfig(level=logging.INFO)
+# Load the pre-trained MobileNetV2 model + higher level layers
+model = MobileNetV2()
 last_notified = {}
 app.logger.info(colored('Your Application startup', 'green'))
+ITEMS_PER_PAGE = 10
 
 # model = VGG16(weights='imagenet', include_top=False)
-# Define the templates
-# user_template = "INSERT INTO user (first_name, last_name, username, email, phone, password, is_admin, email_verified, profile_visibility, created_at) VALUES ('{first_name}', '{last_name}', '{username}', '{email}', '{phone}', '{hashed_password}', {is_admin}, {email_verified}, '{profile_visibility}', '{created_at}');"
-# item_template = "INSERT INTO item (name, description, category, location, user_id, type, created_at, time) VALUES ('{name}', '{description}', '{category}', '{location}', {user_id}, '{type}', '{created_at}', '{time}');"
+
+# # Define the templates
+# user_template = "INSERT INTO user (first_name, last_name, username, email, phone, password, is_admin, email_verified, profile_visibility, created_at, is_active) VALUES ('{first_name}', '{last_name}', '{username}', '{email}', '{phone}', '{hashed_password}', {is_admin}, {email_verified}, '{profile_visibility}', '{created_at}', {is_active});"
+# item_template = "INSERT INTO item (name, description, category, location, user_id, type, created_at, time, is_verified, image_file) VALUES ('{name}', '{description}', '{category}', '{location}', {user_id}, '{type}', '{created_at}', '{time}', {is_verified}, '{image_file}');"
+#
+# # Categories from the form
+# categories = ['Electronics', 'Clothes', 'Accessories', 'Vehicle', 'Books', 'Stationery', 'Wallet', 'Jewellery', 'Keys',
+#               'Documents', 'Others']
 #
 # # Generate the SQL
 # user_sql = []
 # item_sql = []
-# `
+#
 # for i in range(1, 51):
 #     password = f'password{i}'
 #     hashed_password = generate_password_hash(password)
@@ -75,52 +85,55 @@ app.logger.info(colored('Your Application startup', 'green'))
 #     user_sql.append(user_template.format(first_name=f'First{i}', last_name=f'Last{i}', username=f'user{i}',
 #                                          email=f'user{i}@example.com', phone=f'123456789{i}',
 #                                          hashed_password=hashed_password, is_admin='FALSE', email_verified='FALSE',
-#                                          profile_visibility='public', created_at=created_at))
+#                                          profile_visibility='public', created_at=created_at, is_active='TRUE'))
+#
+#     # Choose a category from the list of categories
+#     category = categories[i % len(categories)]
 #
 #     item_sql.append(
-#         item_template.format(name=f'Item{i}', description=f'Item{i} Description', category=f'Category{i}',
-#                              location=f'Location{i}',
-#                              user_id=i, type='lost', created_at=created_at, time=created_at))
+#         item_template.format(name=f'Item{i}', description=f'Item{i} Description', category=category,
+#                              location=f'Location{i}', user_id=i, type='lost', created_at=created_at, time=created_at,
+#                              is_verified='FALSE', image_file='default.jpg'))
 #
 # # Output the SQL
 # print("\n".join(user_sql))
 # print("\n".join(item_sql))
 
 # setup production metrics via Prometheus.
-metrics.info('app_info', 'Application info', version='1.0.3')
-
-# setup some standard metrics
-metrics.info('requests_by_status_and_path', 'Request latencies by status and path',
-             labels={'status': lambda r: r.status_code, 'path': lambda: request.path})
-metrics.info('requests_by_method_and_path', 'Request latencies by method and path',
-             labels={'method': lambda: request.method, 'path': lambda: request.path})
-metrics.info('requests_by_status', 'Request latencies by status',
-             labels={'status': lambda r: r.status_code})
-metrics.info('requests_by_method', 'Request latencies by method',
-             labels={'method': lambda: request.method})
-metrics.info('requests_by_path', 'Request latencies by path',
-             labels={'path': lambda: request.path})
-metrics.info('requests_by_endpoint', 'Request latencies by endpoint',
-             labels={'endpoint': lambda: request.endpoint})
-
-# setup the summary histogram for requests
-metrics.info('requests_latency', 'Request latency in seconds',
-             labels={'method': lambda: request.method, 'path': lambda: request.path})
-
-# setup the endpoint for the health check
-metrics.info('health', 'Health status of the service')
-
-if not app.debug:
-    if not os.path.exists('logs'):
-        os.mkdir('logs')
-    file_handler = RotatingFileHandler('logs/system.log', maxBytes=10240, backupCount=3)
-    file_handler.setFormatter(logging.Formatter(
-        '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
-    file_handler.setLevel(logging.INFO)
-    app.logger.addHandler(file_handler)
-
-    app.logger.setLevel(logging.INFO)
-    app.logger.info('Your Application startup')
+# metrics.info('app_info', 'Application info', version='1.0.3')
+#
+# # setup some standard metrics
+# metrics.info('requests_by_status_and_path', 'Request latencies by status and path',
+#              labels={'status': lambda r: r.status_code, 'path': lambda: request.path})
+# metrics.info('requests_by_method_and_path', 'Request latencies by method and path',
+#              labels={'method': lambda: request.method, 'path': lambda: request.path})
+# metrics.info('requests_by_status', 'Request latencies by status',
+#              labels={'status': lambda r: r.status_code})
+# metrics.info('requests_by_method', 'Request latencies by method',
+#              labels={'method': lambda: request.method})
+# metrics.info('requests_by_path', 'Request latencies by path',
+#              labels={'path': lambda: request.path})
+# metrics.info('requests_by_endpoint', 'Request latencies by endpoint',
+#              labels={'endpoint': lambda: request.endpoint})
+#
+# # setup the summary histogram for requests
+# metrics.info('requests_latency', 'Request latency in seconds',
+#              labels={'method': lambda: request.method, 'path': lambda: request.path})
+#
+# # setup the endpoint for the health check
+# metrics.info('health', 'Health status of the service')
+#
+# if not app.debug:
+#     if not os.path.exists('logs'):
+#         os.mkdir('logs')
+#     file_handler = RotatingFileHandler('logs/system.log', maxBytes=10240, backupCount=3)
+#     file_handler.setFormatter(logging.Formatter(
+#         '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
+#     file_handler.setLevel(logging.INFO)
+#     app.logger.addHandler(file_handler)
+#
+#     app.logger.setLevel(logging.INFO)
+#     app.logger.info('Your Application startup')
 
 if not app.debug:
     if not os.path.exists('logs'):
@@ -154,6 +167,27 @@ log_message('INFO', 'This is an info message')
 log_message('ERROR', 'This is an error message')
 log_message('WARNING', 'This is a warning message')
 log_message('DEBUG', 'This is a debug message')
+
+# Define your metrics here
+http_requests_total = Counter('http_requests_total', 'Total HTTP Requests', ['method', 'endpoint'])
+request_duration_seconds = Histogram('request_duration_seconds', 'Histogram of requests duration (s)')
+
+
+@app.route('/metrics', methods=['GET'])
+def metrics():
+    return Response(generate_latest(REGISTRY), mimetype='text/plain')
+
+
+@app.before_request
+def before_request():
+    flask.g.start_time = time.time()
+
+
+@app.after_request
+def increment_request_count(response):
+    http_requests_total.labels(method=request.method, endpoint=request.endpoint).inc()
+    request_duration_seconds.observe(time.time() - flask.g.start_time)
+    return response
 
 
 @app.route('/health', methods=['GET'])
@@ -202,7 +236,8 @@ def register():
             email=form.email.data,
             phone=form.phone.data,
             profile_visibility=form.profile_visibility.data,
-            is_admin=False
+            is_admin=False,
+            is_active=False
         )
         user.set_password(form.password.data)
 
@@ -336,6 +371,8 @@ def login():
                 print("Password correct")  # Debugging line
                 if user.email_verified:
                     login_user(user)
+                    user.is_active = True
+                    db.session.commit()
                     print(f"Is user logged in? {current_user.is_authenticated}")  # Debugging line
                     next_url = session.pop('next_url', None) or url_for('dashboard')
                     print(f"Next URL from session: {next_url}")  # Debugging line
@@ -642,7 +679,8 @@ def report_item():
             type=form.type.data,  # Add this line
             image_file=image_filename,
             user_id=current_user.id,
-            time=report_time  # Set the time
+            time=report_time,  # Set the time
+            is_verified=False
         )
 
         db.session.add(item)
@@ -707,7 +745,7 @@ def search():
     location_query = request.form.get('location_query')
 
     # Filter items based on the type (lost or found)
-    items = Item.query.filter_by(type=search_type)
+    items = Item.query.filter_by(type=search_type, is_verified=True)
 
     if item_query:
         items = items.filter(Item.description.contains(item_query))
@@ -728,7 +766,7 @@ def search_results():
     location_query = request.args.get('location_query')
 
     # Build the query
-    query = Item.query
+    query = Item.query.filter_by(is_verified=True)
 
     if search_type:
         query = query.filter(Item.type == search_type)
@@ -741,8 +779,48 @@ def search_results():
 
     items = query.all()
 
+    # print the item using loop
+    for item in items:
+        print(item.name)
+
     return render_template('search_results.html', items=items, search_type=search_type,
                            item_query=item_query, location_query=location_query)
+
+
+@app.route('/load_more', methods=['GET'])
+def load_more():
+    page = request.args.get('page', 1, type=int)
+    category = request.args.get('category')
+    location = request.args.get('location')
+
+    # Debug Prints
+    print("Page:", page)
+    print("Category:", category)
+    print("Location:", location)
+
+    query = Item.query.filter_by(is_verified=True)
+
+    if category and category != "":
+        query = query.filter(Item.category == category)
+    if location and location != "":
+        query = query.filter(Item.location.like(f"%{location}%"))
+
+    items = query.paginate(page=page, per_page=10, error_out=False).items
+
+    items_list = [
+        {
+            'id': item.id,
+            'description': item.description,
+            'category': item.category,
+            'location': item.location,
+            'time': item.time.strftime('%Y-%m-%d %H:%M'),
+            'image_file': url_for('static', filename='images/' + item.image_file) if item.image_file else None
+        }
+        for item in items
+    ]
+
+    return jsonify(items_list)
+
 
 
 @app.route('/item_details/<int:item_id>', methods=['GET'])
@@ -897,9 +975,6 @@ The Support Team
     return render_template('claim_item.html', item_id=item_id)
 
 
-from flask import request
-
-
 @app.route('/manage_claims')
 def manage_claims():
     print(request.args.get('status'))
@@ -980,34 +1055,34 @@ def reject_claim(claim_id):
 #     return matching_images
 
 #
-# @app.route('/image_recognition', methods=['GET', 'POST'])
-# def image_recognition():
-#     if request.method == 'POST':
-#         if 'image' not in request.files:
-#             flash('No image provided', 'error')
-#             return redirect(request.url)
-#
-#         image = request.files['image']
-#         if image.filename == '':
-#             flash('No selected image', 'error')
-#             return redirect(request.url)
-#
-#         if image and allowed_file(image.filename):
-#             filename = secure_filename(image.filename)
-#             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-#             image.save(filepath)
-#
-#             # Process the image and find matching items
-#             recognized_objects = process_image(filepath)
-#             matching_items = find_matching_items(recognized_objects)
-#
-#             return render_template('image_recognition_results.html', items=matching_items,
-#                                    recognized_objects=recognized_objects)
-#
-#         flash('Invalid file type', 'error')
-#         return redirect(request.url)
-#
-#     return render_template('image_recognition.html')
+@app.route('/image_recognition', methods=['GET', 'POST'])
+def image_recognition():
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            flash('No file part')
+            return redirect(request.url)
+        file = request.files['file']
+        if file.filename == '':
+            flash('No selected file')
+            return redirect(request.url)
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            filepath = os.path.join(app.config['IMAGE_UPLOAD_FOLDER'], filename)
+            file.save(filepath)
+
+            img = Image.open(filepath)
+            if img.mode == 'RGBA':
+                img = img.convert('RGB')  # Convert RGBA to RGB
+            img = img.resize((224, 224))
+            img_array = np.array(img)[np.newaxis, ...]
+            img_array = preprocess_input(img_array)
+
+            predictions = model.predict(img_array)
+            results = decode_predictions(predictions)[0]  # Removed .numpy()
+
+            return render_template('image_recognition.html', results=results)
+
+    return render_template('image_recognition.html')
 
 
 def admin_required(f):
@@ -1045,12 +1120,24 @@ def admin_dashboard():
 @login_required
 @admin_required
 def manage_users():
-    users = User.query.all()
+    page = request.args.get('page', 1, type=int)
+    search_term = request.args.get('search', '', type=str)
+
+    if search_term:
+        users = User.query.filter(
+            or_(
+                User.first_name.ilike(f"%{search_term}%"),
+                User.last_name.ilike(f"%{search_term}%"),
+                User.email.ilike(f"%{search_term}%"),
+                User.username.ilike(f"%{search_term}%")
+            )
+        ).paginate(page=page, per_page=ITEMS_PER_PAGE, error_out=False)
+    else:
+        users = User.query.paginate(page=page, per_page=ITEMS_PER_PAGE, error_out=False)
 
     if request.method == 'POST':
         user_id = request.form.get('user_id')
         action = request.form.get('action')
-
         user = User.query.get(user_id)
 
         if action == "deactivate":
@@ -1063,32 +1150,68 @@ def manage_users():
             user.is_admin = False
 
         db.session.commit()
-        return redirect(url_for('manage_users'))
+        return redirect(url_for('manage_users', search=search_term))
 
-    return render_template('admin_manage_users.html', users=users, active_page='manage_users')
+    return render_template('admin_manage_users.html', users=users, active_page='manage_users', search_term=search_term)
 
 
 @app.route('/admin/manage_items', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def manage_items():
-    items = Item.query.all()
+    page = request.args.get('page', 1, type=int)
+    item_search = request.args.get('item_search', '', type=str)
+
+    # Server-side search functionality
+    if item_search:
+        items_query = Item.query.filter(Item.description.contains(item_search))
+    else:
+        items_query = Item.query
+
+    pagination = items_query.paginate(page=page, per_page=ITEMS_PER_PAGE, error_out=False)
+    items = pagination.items  # items for the current page
 
     if request.method == 'POST':
-        item_id = request.form.get('item_id')
+        print("POST request received")  # Debugging print
         action = request.form.get('action')
+        selected_items = request.form.getlist('selected_items')  # getlist for multiple items
+        print(f"Action: {action}, Selected Items: {selected_items}")  # Debugging print
 
-        item = Item.query.get(item_id)
+        # Handle bulk actions
+        if action in ["verify_selected", "delete_selected"]:
+            for item_id in selected_items:
+                item = Item.query.get(item_id)
+                if action == "verify_selected":
+                    item.is_verified = True
+                    flash(f'Item {item_id} has been verified', 'success')
+                elif action == "delete_selected":
+                    db.session.delete(item)
+                    flash(f'Item {item_id} has been deleted', 'success')
 
-        if action == "verify":
-            item.is_verified = True
-        elif action == "delete":
-            db.session.delete(item)
+        # Single item actions
+        else:
+            item_id = request.form.get('item_id')
+            print(f"Received item_id: {item_id}")  # Debug
+            item = Item.query.get(item_id)
+            print(f"Item ID: {item_id}, Item: {item}")  # Debugging print
+            if action == "verify":
+                item.is_verified = True
+                print("Item verified")  # Debugging print
+                flash('Item has been verified', 'success')
+            elif action == "delete":
+                db.session.delete(item)
+                flash('Item has been deleted', 'success')
 
         db.session.commit()
-        return redirect(url_for('manage_items'))
+        return redirect(url_for('manage_items', page=page, item_search=item_search))
 
-    return render_template('admin_manage_items.html', items=items, active_page='manage_items')
+    return render_template(
+        'admin_manage_items.html',
+        items=items,
+        pagination=pagination,
+        active_page='manage_items',
+        item_search=item_search  # Pass the current search term back to the template
+    )
 
 
 @app.route('/admin/statistics')
@@ -1171,10 +1294,15 @@ def admin_metrics():
     total_items = Item.query.count()
     recent_items = Item.query.filter(Item.created_at > datetime.utcnow() - timedelta(days=7)).count()
     items_by_category = db.session.query(Item.category, db.func.count(Item.category)).group_by(Item.category).all()
+    verified_items = Item.query.filter_by(is_verified=True).count()
+    unverified_items = total_items - verified_items
 
     return render_template('admin_metrics.html', total_users=total_users, recent_users=recent_users,
                            recent_logins=recent_logins, total_items=total_items,
-                           recent_items=recent_items, items_by_category=items_by_category, active_page='admin_metrics')
+                           recent_items=recent_items, items_by_category=items_by_category,
+                           verified_items=verified_items,
+                           unverified_items=unverified_items,
+                           active_page='admin_metrics')
 
 
 for rule in app.url_map.iter_rules():

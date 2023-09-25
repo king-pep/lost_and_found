@@ -18,6 +18,7 @@ class User(UserMixin, db.Model):
     password = db.Column(db.String(128), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
     last_login = db.Column(db.DateTime, nullable=True)
+    is_active = db.Column(db.Boolean, default=True)
     email_verified = db.Column(db.Boolean, nullable=False, default=False)
     items = db.relationship('Item', backref='reporter', lazy=True)
     profile_visibility = db.Column(db.String(50), default='public', nullable=False)
@@ -43,6 +44,7 @@ class Item(db.Model):
     location = db.Column(db.String(200), nullable=False, index=True)  # Added index
     time = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    is_verified = db.Column(db.Boolean, default=False, nullable=False)
     type = db.Column(db.String(10), nullable=False, index=True)  # This will store values "lost" or "found"
     image_file = db.Column(db.String(20), nullable=True, default='default.jpg')
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)

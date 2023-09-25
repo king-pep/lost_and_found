@@ -1,59 +1,214 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mt-4">
-    <h2>Manage Users</h2>
-{% include 'admin_navbar.html' %}
+<style>
+    :root {
+        --background: #EBECF0;
+        --table-background: #FFFFFF;
+        --primary: #101824;
+        --gray: #A0A7B1;
+        --odd-row: #f6f9ff;
+        --gray-background: #EDEEF1;
+        --gray-mid: #F1F2F6;
+    }
 
-    <!-- Search and Filter -->
+    body {
+        font-family: sans-serif;
+        background-color: var(--background);
+    }
+
+    .table-widget {
+        border-radius: 16px;
+        background-color: var(--table-background);
+        padding: 24px;
+        border: 2px solid var(--gray-background);
+        box-shadow: rgba(0, 0, 0, 0.05) 0px 6px 24px 0px, rgba(0, 0, 0, 0.08) 0px 0px 0px 1px;
+        text-align: left;
+        overflow-x: auto;
+    }
+
+    .table-widget table {
+        max-width: fit-content;
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    .table-widget caption {
+        font-size: 1.12rem;
+        font-weight: 700;
+        text-align: left;
+        margin: 8px 0px;
+    }
+
+    .table-widget th, .table-widget td {
+        padding: 20px 16px;
+        font-size: 0.875rem;
+    }
+
+    .table-widget th {
+        color: var(--gray);
+    }
+
+    .table-widget thead, .table-widget tfoot {
+        border-top: 2px solid var(--gray-background);
+    }
+
+    .table-widget tbody tr {
+        cursor: pointer;
+    }
+
+    .table-widget tbody tr:nth-child(odd) {
+        background-color: var(--odd-row);
+    }
+
+    .table-widget tbody tr:hover {
+        background-color: #e2ecff;
+    }
+
+    .pagination {
+        list-style-type: none;
+        display: flex;
+        gap: 16px;
+        padding: 0px;
+    }
+
+    .pagination a {
+        display: block;
+        color: var(--primary);
+        font-size: 1.3rem;
+        text-decoration: none;
+        font-weight: 700;
+        padding: 12px 16px;
+        border-radius: 8px;
+    }
+
+    .pagination a:hover, a.active {
+        background-color: var(--odd-row);
+        text-decoration: underline;
+    }
+
+    .pagination li.disabled {
+        color: var(--gray);
+        padding: 12px 16px;
+    }
+
+    .form-control {
+        padding: 8px;
+        border-radius: 8px;
+        border: 1px solid var(--gray);
+    }
+
+    .btn {
+        padding: 8px 16px;
+        border: none;
+        cursor: pointer;
+        font-weight: 700;
+        border-radius: 8px;
+    }
+
+    .btn-primary {
+        background-color: #2ECC71;
+        color: white;
+    }
+</style>
+
+<div class="container">
+    <h2>Manage Users</h2>
+    {% include 'admin_navbar.html' %}
+
     <div class="mb-4">
-        <input type="text" class="form-control" placeholder="Search Users" id="userSearch">
-        <!-- You can add more filters as needed -->
+        <form method="get" action="{{ url_for('manage_users') }}">
+            <input type="text" class="form-control" placeholder="Search Users" id="userSearch" name="search"
+                   value="{{ search_term }}">
+        </form>
     </div>
 
     <form method="post">
-        <table class="table table-bordered table-hover">
-            <thead>
-            <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Username</th>
-                <th>Actions</th>
-                <th>Select</th>  <!-- For bulk actions -->
-            </tr>
-            </thead>
-            <tbody>
-            {% for user in users %}
-            <tr>
-                <td>{{ user.id }}</td>
-                <td>{{ user.first_name }} {{ user.last_name }}</td>
-                <td>{{ user.email }}</td>
-                <td>{{ user.username }}</td>
-                <td>
-                    <input type="hidden" name="user_id" value="{{ user.id }}">
-                    {% if user.is_active %}
-                    <button type="submit" name="action" value="deactivate" class="btn btn-primary" data-bs-toggle="tooltip" title="Deactivate User">Deactivate</button>
-                    {% else %}
-                    <button type="submit" name="action" value="activate" class="btn btn-primary" data-bs-toggle="tooltip" title="Activate User">Activate</button>
-                    {% endif %}
-                    {% if not user.is_admin %}
-                    <button type="submit" name="action" value="make_admin" class="btn btn-primary" data-bs-toggle="tooltip" title="Make Admin">Make Admin</button>
-                    {% else %}
-                    <button type="submit" name="action" value="remove_admin" class="btn btn-primary" data-bs-toggle="tooltip" title="Remove Admin">Remove Admin</button>
-                    {% endif %}
-                </td>
-                <td><input type="checkbox" name="selected_users" value="{{ user.id }}"></td>  <!-- For bulk actions -->
-            </tr>
+        <div class="table-widget">
+            <caption>
+                Total Users:
+                <span class="table-row-count">{{ users.total }}</span>
+            </caption>
+            <table>
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Username</th>
+                    <th>Actions</th>
+                    <th>Select</th>
+                </tr>
+                </thead>
+                <tbody id="user-rows">
+                {% for user in users.items %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.first_name }} {{ user.last_name }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.username }}</td>
+                    <td>
+                        <input type="hidden" name="user_id" value="{{ user.id }}">
+                        {% if user.is_active %}
+                        <button type="submit" name="action" value="deactivate" class="btn btn-primary">Deactivate
+                        </button>
+                        {% else %}
+                        <button type="submit" name="action" value="activate" class="btn btn-primary">Activate</button>
+                        {% endif %}
+                        {% if not user.is_admin %}
+                        <button type="submit" name="action" value="make_admin" class="btn btn-primary">Make Admin
+                        </button>
+                        {% else %}
+                        <button type="submit" name="action" value="remove_admin" class="btn btn-primary">Remove Admin
+                        </button>
+                        {% endif %}
+                    </td>
+                    <td><input type="checkbox" name="selected_users" value="{{ user.id }}"></td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <ul class="pagination">
+            {% for page_num in users.iter_pages() %}
+            {% if page_num %}
+            {% if page_num != users.page %}
+            <li><a href="{{ url_for('manage_users', page=page_num, search=search_term) }}">{{ page_num }}</a></li>
+            {% else %}
+            <li class="active"><a>{{ page_num }}</a></li>
+            {% endif %}
+            {% else %}
+            <li class="disabled"><span>...</span></li>
+            {% endif %}
             {% endfor %}
-            </tbody>
-        </table>
-
-        <!-- Bulk Action Buttons -->
-        <button type="submit" name="bulk_action" value="activate_selected" class="btn btn-primary" data-bs-toggle="tooltip" title="Activate Selected Users">Activate Selected</button>
-        <button type="submit" name="bulk_action" value="deactivate_selected" class="btn btn-primary" data-bs-toggle="tooltip" title="Deactivate Selected Users">Deactivate Selected</button>
+        </ul>
     </form>
-</div>  <!-- End of container -->
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+        const userSearch = document.getElementById('userSearch');
+        const userRows = document.getElementById('user-rows');
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+        userSearch.addEventListener('keyup', function (e) {
+            const term = e.target.value.toLowerCase();
+            const users = userRows.getElementsByTagName('tr');
+            Array.from(users).forEach(function (user) {
+                const id = user.firstElementChild.textContent;
+                const name = user.children[1].textContent;
+                const email = user.children[2].textContent;
+                const username = user.children[3].textContent;
+                if (id.toLowerCase().indexOf(term) !== -1
+                    || name.toLowerCase().indexOf(term) !== -1
+                    || email.toLowerCase().indexOf(term) !== -1
+                    || username.toLowerCase().indexOf(term) !== -1) {
+                    user.style.display = 'table-row';
+                } else {
+                    user.style.display = 'none';
+                }
+            });
+        });
+    });
+</script>
+
 {% endblock %}

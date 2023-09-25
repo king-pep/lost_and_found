@@ -1,10 +1,63 @@
 {% extends "base.html" %}
 
 {% block content %}
+<style>
+    :root {
+        --background: #EBECF0;
+        --card-background: #FFFFFF;
+        --primary: #101824;
+        --gray: #A0A7B1;
+        --border-color: #EDEEF1;
+    }
+
+    body {
+        font-family: sans-serif;
+        background-color: var(--background);
+    }
+
+    .container {
+        max-width: 1100px;
+    }
+
+    .card {
+        background-color: var(--card-background);
+        border-radius: 16px;
+        border: 1px solid var(--border-color);
+        box-shadow: rgba(0, 0, 0, 0.05) 0px 6px 24px 0px, rgba(0, 0, 0, 0.08) 0px 0px 0px 1px;
+        margin-bottom: 24px;
+    }
+
+    .card-header {
+        background-color: var(--primary);
+        color: white;
+        font-size: 1.2rem;
+        font-weight: 600;
+        padding: 12px 24px;
+        border-radius: 15px 15px 0 0;
+    }
+
+    .list-group-item {
+        font-size: 1rem;
+        color: var(--primary);
+        border-color: var(--border-color);
+        padding: 12px 24px;
+    }
+
+    .canvas-container {
+        height: 200px;
+    }
+
+    .canvas-container canvas {
+        width: 100% !important;
+        height: auto !important;
+    }
+</style>
+
 <div class="container mt-4">
     <h2>Admin Metrics</h2>
-{% include 'admin_navbar.html' %}
-    <div class="row">
+    {% include 'admin_navbar.html' %}
+
+    <div class="row gy-4">
         <!-- User Metrics -->
         <div class="col-md-6">
             <div class="card">
@@ -24,56 +77,57 @@
                 <div class="card-header">Item Metrics</div>
                 <ul class="list-group list-group-flush">
                     <li class="list-group-item">Total Reported Items: {{ total_items }}</li>
+                    <li class="list-group-item">Items Verified: {{ verified_items }}</li>
+                    <li class="list-group-item">Items Pending Verification: {{ unverified_items }}</li>
                     <li class="list-group-item">Items Reported in Last 7 days: {{ recent_items }}</li>
                 </ul>
             </div>
         </div>
-    </div>
 
-    <div class="row mt-4">
-        <!-- Items by Category -->
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">Items by Category</div>
-                <ul class="list-group list-group-flush">
-                    {% for category, count in items_by_category %}
-                    <li class="list-group-item">{{ category }}: {{ count }}</li>
-                    {% endfor %}
-                </ul>
+        <div class="row gy-4">
+            <!-- Items by Category -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">Items by Category</div>
+                    <ul class="list-group list-group-flush">
+                        {% for category, count in items_by_category %}
+                        <li class="list-group-item">{{ category }}: {{ count }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
             </div>
-        </div>
 
-        <!-- User Growth Chart -->
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">User Growth</div>
-                <div class="card-body">
-                    <canvas id="userGrowthChart" width="400" height="200"></canvas>
+            <!-- User Growth Chart -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">User Growth</div>
+                    <div class="card-body canvas-container">
+                        <canvas id="userGrowthChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Notifications Section -->
-    <div class="card mb-4">
-        <div class="card-header">System Notifications</div>
-        <ul class="list-group list-group-flush">
-            {% for notification in system_notifications %}
-                <li class="list-group-item">{{ notification.message }}</li>
-            {% endfor %}
-        </ul>
-    </div>
+<!--        &lt;!&ndash; Notifications Section &ndash;&gt;-->
+<!--        <div class="card">-->
+<!--            <div class="card-header">System Notifications</div>-->
+<!--            <ul class="list-group list-group-flush">-->
+<!--                {% for notification in system_notifications %}-->
+<!--                <li class="list-group-item">{{ notification.message }}</li>-->
+<!--                {% endfor %}-->
+<!--            </ul>-->
+<!--        </div>-->
 
-    <!-- Audit Logs Section -->
-    <div class="card mb-4">
-        <div class="card-header">Audit Logs</div>
-        <ul class="list-group list-group-flush">
-            {% for log in audit_logs %}
-                <li class="list-group-item">{{ log.message }}</li>
-            {% endfor %}
-        </ul>
-    </div>
-</div>  <!-- End of container -->
+        <!-- Audit Logs Section -->
+<!--        <div class="card mb-4">-->
+<!--            <div class="card-header">Audit Logs</div>-->
+<!--            <ul class="list-group list-group-flush">-->
+<!--                {% for log in audit_logs %}-->
+<!--                <li class="list-group-item">{{ log.message }}</li>-->
+<!--                {% endfor %}-->
+<!--            </ul>-->
+<!--        </div>-->
+    </div>  <!-- End of container -->
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-{% endblock %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    {% endblock %}

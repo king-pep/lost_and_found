@@ -10,8 +10,6 @@
         <p>Use the dashboard to get a quick overview of your items and their statuses.</p>
     </div>
 
-
-
     <!-- Dashboard Cards -->
     <div class="row">
         <!-- Lost Items Card -->
@@ -27,6 +25,7 @@
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             {{ item.description }} - {{ item.location }}
                             <span class="badge bg-secondary rounded-pill">{{ status }}</span>
+                            <span class="badge bg-{{ 'success' if item.is_verified else 'danger' }} rounded-pill">{{ 'Verified' if item.is_verified else 'Not Verified' }}</span>
                         </li>
                         {% endfor %}
                     </ul>
@@ -50,6 +49,7 @@
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             {{ item.description }} - {{ item.location }}
                             <span class="badge bg-secondary rounded-pill">{{ status }}</span>
+                            <span class="badge bg-{{ 'success' if item.is_verified else 'danger' }} rounded-pill">{{ 'Verified' if item.is_verified else 'Not Verified' }}</span>
                         </li>
                         {% endfor %}
                     </ul>
@@ -67,4 +67,12 @@
         <a href="{{ url_for('profile') }}" class="btn btn-secondary"><i class="bi bi-person"></i> View Profile</a>
     </div>
 </div>
+
+<!-- Styles for Badges -->
+<style>
+    .badge {
+        font-size: 0.8rem;
+        padding: 0.3em 0.6em;
+    }
+</style>
 {% endblock %}

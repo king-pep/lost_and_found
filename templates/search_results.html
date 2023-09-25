@@ -2,79 +2,130 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2 class="mb-4">Search Results</h2>
+    <h2 class="mb-4 text-center">Search Results</h2>
 
-    <!-- Show applied filters, allow them to be cleared -->
     {% if search_item %}
-    <div class="alert alert-info" role="alert">
-        search filter: {{ search_item }} <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+        <strong>Search filter:</strong> {{ search_item }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
     {% endif %}
 
     <div class="row">
-        <!-- Filters Section -->
-        <div class="col-md-3">
-            <h4>Refine Results</h4>
-            <form action="{{ url_for('search_results') }}" method="GET">
-                <!-- Category Filter -->
-                <div class="form-group">
-                    <label for="categoryFilter">Category:</label>
-                    <select class="form-control" id="categoryFilter" name="category">
-                        <option value="">All Categories</option>
-                        <!-- You can populate these options based on distinct categories in your database -->
-                        <option value="Electronics">Electronics</option>
-                        <option value="Clothing">Clothing</option>
-                        <!-- Add more categories as needed -->
-                    </select>
+        <div class="col-md-3 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    Refine Results
                 </div>
-
-                <!-- Location Filter -->
-                <div class="form-group">
-                    <label for="locationFilter">Location:</label>
-                    <input type="text" class="form-control" id="locationFilter" name="location">
-                </div>
-
-                <button type="submit" class="btn btn-primary">Apply Filters</button>
-            </form>
-        </div>
-
-        <!-- Search Results -->
-        <div class="col-md-9">
-            <div class="row">
-                {% if items and items|length > 0 %}
-                {% for item in items %}
-                <div class="col-md-4 mb-4">
-                    <div class="card">
-                        {% if item.image_file %}
-                        <img src="{{ url_for('static', filename='images/' + item.image_file) }}" class="card-img-top"
-                             alt="{{ item.description }}">
-                        {% endif %}
-                        <div class="card-body">
-                            <h5 class="card-title">{{ item.description }}</h5>
-                            <p class="card-text">
-                                <strong>Category:</strong> {{ item.category }}<br>
-                                <strong>Location:</strong> {{ item.location }}<br>
-                                <strong>Date:</strong> {{ item.time.strftime('%Y-%m-%d %H:%M') }}
-                            </p>
-                            <a href="{{ url_for('item_details', item_id=item.id) }}" class="btn btn-primary">View
-                                Details</a>
-                            <!-- Claim Button -->
-                            <a href="{{ url_for('claim_item', item_id=item.id) }}" class="btn btn-warning">Claim</a>
+                <div class="card-body">
+                    <form id="filterForm">
+                        <div class="form-group mb-3">
+                            <label for="categoryFilter" class="form-label">Category:</label>
+                            <select class="form-control" id="categoryFilter" name="category">
+                                <option value="">All Categories</option>
+                                <option value="Electronics">Electronics</option>
+                                <option value="Clothes">Clothing</option>
+                            </select>
                         </div>
-                    </div>
+
+                        <div class="form-group mb-3">
+                            <label for="locationFilter" class="form-label">Location:</label>
+                            <input type="text" class="form-control" id="locationFilter" name="location"
+                                   placeholder="Enter Location">
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="dateRangeFilter" class="form-label">Date Range:</label>
+                            <input type="text" class="form-control" id="dateRangeFilter" name="date_range"
+                                   placeholder="Enter Date Range">
+                        </div>
+
+                        <button type="button" class="btn btn-primary w-100" onclick="applyFilters()">Apply Filters
+                        </button>
+                    </form>
                 </div>
-                {% endfor %}
-                {% else %}
-                <div class="col-12">
-                    <div class="alert alert-warning" role="alert">
-                        No items found matching your search criteria. Try adjusting your filters or explore our popular
-                        categories.
-                    </div>
-                </div>
-                {% endif %}
             </div>
         </div>
 
+        <div class="col-md-9">
+            <div class="row" id="resultsRow"></div>
+            <div id="loadingIndicator" class="text-center my-3" style="display:none;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="sr-only">Loading...</span>
+                </div>
+            </div>
+            <div id="noMoreDataAlert" class="text-center my-3 alert alert-warning" style="display:none;">
+                No more items found.
+            </div>
+        </div>
     </div>
 </div>
+{{ super() }}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    let page = 1;
+    let isLoading = false;
+    let noMoreData = false;
+
+    function loadMoreItems() {
+        if (isLoading || noMoreData) return;
+        isLoading = true;
+        $("#loadingIndicator").show();
+
+        let params = $("#filterForm").serialize() + "&page=" + page;
+        $.get("{{ url_for('load_more') }}", params, function (data) {
+            $("#loadingIndicator").hide();
+            if (data.length === 0) {
+                noMoreData = true;
+                $("#noMoreDataAlert").show();
+                return;
+            }
+            $("#noMoreDataAlert").hide();
+
+            data.forEach(item => {
+                let itemDetailsUrl = `/item_details/${item.id}`;
+                let claimItemUrl = `/claim_item/${item.id}`;
+
+                let itemHTML = `
+                <div class="col-md-4 mb-4">
+                    <div class="card">
+                        ${item.image_file ? `<img src="${item.image_file}" class="card-img-top" alt="${item.description}">` : ''}
+                        <div class="card-body">
+                            <h5 class="card-title">${item.description}</h5>
+                            <p class="card-text">
+                                <strong>Category:</strong> ${item.category}<br>
+                                <strong>Location:</strong> ${item.location}<br>
+                                <strong>Date:</strong> ${item.time}
+                            </p>
+                            <a href="${itemDetailsUrl}" class="btn btn-primary">View Details</a>
+                            <a href="${claimItemUrl}" class="btn btn-warning">Claim</a>
+                        </div>
+                    </div>
+                </div>`;
+                $("#resultsRow").append(itemHTML);
+            });
+
+            page++;
+            isLoading = false;
+        });
+    }
+
+    function applyFilters() {
+        $("#resultsRow").empty();
+        page = 1;
+        noMoreData = false;
+        $("#noMoreDataAlert").hide();
+        loadMoreItems();
+    }
+
+    $(window).scroll(function () {
+        if ($(window).scrollTop() + $(window).height() >= $(document).height() - 100) {
+            loadMoreItems();
+        }
+    });
+
+    $(document).ready(function () {
+        loadMoreItems();
+    });
+</script>
 {% endblock %}

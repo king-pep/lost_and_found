@@ -1,9 +1,38 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mt-5">
+<style>
+    body {
+        font-family: 'Roboto', sans-serif;
+        background-color: #f4f4f4;
+    }
+    .container {
+        margin-top: 20px;
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.1);
+    }
+    .card {
+        border-radius: 10px;
+        transition: transform .2s;
+    }
+    .card:hover {
+        transform: scale(1.05);
+    }
+    .card-header {
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
+    }
+    .list-group-item {
+        border: none;
+    }
+</style>
+
+{% include 'admin_navbar.html' %}
+
+<div class="container mt-4">
     <h2 class="mb-4">Admin Dashboard</h2>
-    {% include 'admin_navbar.html' %}
 
     <!-- Flash Messages Section -->
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -16,6 +45,34 @@
     {% endfor %}
     {% endif %}
     {% endwith %}
+
+    <!-- Quick Stats Section -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Total Users</h5>
+                    <p class="h3">{{ users.total }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-warning text-dark mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Total Reported Items</h5>
+                    <p class="h3">{{ items.total }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-danger text-white mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Pending Claims</h5>
+                    <p class="h3">{{ claims.total }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Dashboard Cards Section -->
     <div class="row">
@@ -32,15 +89,7 @@
                     <li class="list-group-item">No recent users</li>
                     {% endif %}
                 </ul>
-                <div class="card-footer text-muted">
-                    <span class="mr-2">Page {{ users.page }} of {{ users.pages }}</span>
-                    <a class="btn btn-outline-primary btn-sm"
-                       href="{{ url_for('admin_dashboard', user_page=users.prev_num) if users.has_prev else '#' }}"
-                       {{ 'disabled' if not users.has_prev }}>Prev</a>
-                    <a class="btn btn-outline-primary btn-sm"
-                       href="{{ url_for('admin_dashboard', user_page=users.next_num) if users.has_next else '#' }}"
-                       {{ 'disabled' if not users.has_next }}>Next</a>
-                </div>
+                <!-- Removed the footer for cleaner appearance -->
             </div>
         </div>
 
@@ -58,15 +107,7 @@
                     <li class="list-group-item">No recent reported items</li>
                     {% endif %}
                 </ul>
-                <div class="card-footer text-muted">
-                    <span class="mr-2">Page {{ items.page }} of {{ items.pages }}</span>
-                    <a class="btn btn-outline-success btn-sm"
-                       href="{{ url_for('admin_dashboard', item_page=items.prev_num) if items.has_prev else '#' }}"
-                       {{ 'disabled' if not items.has_prev }}>Prev</a>
-                    <a class="btn btn-outline-success btn-sm"
-                       href="{{ url_for('admin_dashboard', item_page=items.next_num) if items.has_next else '#' }}"
-                       {{ 'disabled' if not items.has_next }}>Next</a>
-                </div>
+                <!-- Removed the footer for cleaner appearance -->
             </div>
         </div>
     </div>

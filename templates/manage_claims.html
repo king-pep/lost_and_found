@@ -1,12 +1,108 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mt-4">
-    <h2>Manage Claims</h2>
+<style>
+    :root {
+        --background: #EBECF0;
+        --table-background: #FFFFFF;
+        --primary: #101824;
+        --gray: #A0A7B1;
+        --odd-row: #f6f9ff;
+        --gray-background: #EDEEF1;
+        --gray-mid: #F1F2F6;
+    }
 
+    body {
+        font-family: sans-serif;
+        background-color: var(--background);
+    }
+
+    .table-widget {
+        border-radius: 16px;
+        background-color: var(--table-background);
+        padding: 24px;
+        border: 2px solid var(--gray-background);
+        box-shadow: rgba(0, 0, 0, 0.05) 0px 6px 24px 0px, rgba(0, 0, 0, 0.08) 0px 0px 0px 1px;
+        text-align: left;
+        overflow-x: auto;
+    }
+
+    .table-widget table {
+        max-width: fit-content;
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    .table-widget th, .table-widget td {
+        padding: 20px 16px;
+        font-size: 0.875rem;
+    }
+
+    .table-widget th {
+        color: var(--gray);
+    }
+
+    .pagination {
+        list-style-type: none;
+        display: flex;
+        gap: 16px;
+        padding: 0px;
+    }
+
+    .pagination a {
+        display: block;
+        color: var(--primary);
+        font-size: 1.3rem;
+        text-decoration: none;
+        font-weight: 700;
+        padding: 12px 16px;
+        border-radius: 8px;
+    }
+
+    .pagination a:hover, a.active {
+        background-color: var(--odd-row);
+        text-decoration: underline;
+    }
+
+    .pagination li.disabled {
+        color: var(--gray);
+        padding: 12px 16px;
+    }
+
+    .form-select {
+        padding: 8px;
+        border-radius: 8px;
+        border: 1px solid var(--gray);
+    }
+
+    .btn {
+        padding: 8px 16px;
+        border: none;
+        cursor: pointer;
+        font-weight: 700;
+        border-radius: 8px;
+    }
+
+    .btn-info {
+        background-color: #17a2b8;
+        color: white;
+    }
+
+    .btn-success {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .btn-danger {
+        background-color: #dc3545;
+        color: white;
+    }
+</style>
+
+<div class="container">
+    <h2>Manage Claims</h2>
     {% include 'admin_navbar.html' %}
 
-    <!-- Status Filter -->
     <form class="mb-4" action="{{ url_for('manage_claims') }}" method="get">
         <select name="status" onchange="this.form.submit()" class="form-select">
             <option value="">{{status}}</option>
@@ -17,52 +113,63 @@
         </select>
     </form>
 
+    <div class="table-widget">
+        <table>
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>User</th>
+                <th>Item</th>
+                <th>Submitted Proof</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for claim in claims.items %}
+            <tr>
+                <td>{{ claim.id }}</td>
+                <td>{{ claim.user.username }}</td>
+                <td>{{ claim.item.name }}</td>
+                <td>{{ claim.submitted_proof }}</td>
+                <td>
+                    {% if claim.submitted_proof %}
+                    <a href="{{ url_for('uploaded_file', filename=claim.submitted_proof) }}" target="_blank"
+                       class="btn btn-info">View Proof</a>
+                    {% endif %}
 
-    <table class="table table-bordered table-hover">
-        <thead>
-        <tr>
-            <th>ID</th>
-            <th>User</th>
-            <th>Item</th>
-            <th>Submitted Proof</th>
-            <th>Actions</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for claim in claims.items %}
-        <tr>
-            <td>{{ claim.id }}</td>
-            <td>{{ claim.user.username }}</td>
-            <td>{{ claim.item.name }}</td>
-            <td>{{ claim.submitted_proof }}</td>
-            <td>
-                {% if claim.submitted_proof %}
-                <a href="{{ url_for('uploaded_file', filename=claim.submitted_proof) }}" target="_blank"
-                   class="btn btn-info">View Proof</a>
-                {% endif %}
+                    {% if claim.claim_status != 'Verified' %}
+                    <form method="post" action="{{ url_for('verify_claim', claim_id=claim.id) }}"
+                          class="d-inline-block">
+                        <button type="submit" class="btn btn-success">Verify</button>
+                    </form>
+                    {% endif %}
 
-                {% if claim.claim_status != 'Verified' %}
-                <form method="post" action="{{ url_for('verify_claim', claim_id=claim.id) }}" class="d-inline-block">
-                    <button type="submit" class="btn btn-success">Verify</button>
-                </form>
-                {% endif %}
-
-                {% if claim.claim_status == 'Verified' %}
-                <form method="post" action="{{ url_for('reject_claim', claim_id=claim.id) }}" class="d-inline-block">
-                    <button type="submit" class="btn btn-danger">Reject</button>
-                </form>
-                {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-
-    <div class="pagination">
-        <a href="{{ url_for('manage_claims', page=claims.prev_num) }}"
-           class="{{ 'disabled' if not claims.has_prev }}">Prev</a>
-        <a href="{{ url_for('manage_claims', page=claims.next_num) }}"
-           class="{{ 'disabled' if not claims.has_next }}">Next</a>
+                    {% if claim.claim_status == 'Verified' %}
+                    <form method="post" action="{{ url_for('reject_claim', claim_id=claim.id) }}"
+                          class="d-inline-block">
+                        <button type="submit" class="btn btn-danger">Reject</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
     </div>
-</div>  <!-- End of container -->
+
+    <ul class="pagination">
+        {% for page_num in claims.iter_pages() %}
+        {% if page_num %}
+        {% if page_num != claims.page %}
+        <li><a href="{{ url_for('manage_claims', page=page_num, status=status) }}">{{ page_num }}</a></li>
+        {% else %}
+        <li class="active"><a>{{ page_num }}</a></li>
+        {% endif %}
+        {% else %}
+        <li class="disabled"><span>...</span></li>
+        {% endif %}
+        {% endfor %}
+    </ul>
+</div>
+
 {% endblock %}

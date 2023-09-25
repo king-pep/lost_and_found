@@ -72,6 +72,5 @@ class ItemForm(FlaskForm):
     ])
     location = StringField('Location', validators=[DataRequired()])
     time = StringField('Time')
-    type = SelectField('Item Type', choices=[('lost', 'Lost'), ('found', 'Found')], validators=[DataRequired()])
     image = FileField('Upload an Image', validators=[FileAllowed(['jpg', 'png', 'jpeg'])])
     submit = SubmitField('Report')

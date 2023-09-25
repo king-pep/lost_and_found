@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Image Recognition</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="file" class="form-label">Upload Image</label>
+                            <input class="form-control" type="file" id="file" name="file" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Recognize Image</button>
+                    </form>
+                </div>
+            </div>
+
+            {% if results %}
+            <div class="card mt-4">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">Recognition Results</h4>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        {% for result in results %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ result[1] }} <!-- Displaying the label -->
+                            <span class="badge bg-info rounded-pill">{{ "%.2f"|format(result[2] * 100) }}%</span> <!-- Displaying the score -->
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+    {{ super() }}
+    <script>
+        document.getElementById('file').addEventListener('change', function() {
+            var fileName = document.getElementById('file').files[0].name;
+            var nextSibling = document.querySelector('.form-label')
+            nextSibling.innerText = fileName;
+        });
+    </script>
+{% endblock %}
